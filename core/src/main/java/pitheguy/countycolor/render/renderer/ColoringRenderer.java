@@ -2,10 +2,7 @@ package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector2;
 import pitheguy.countycolor.render.ColoringGrid;
-
-import java.util.BitSet;
 
 import static pitheguy.countycolor.render.util.RenderConst.*;
 
@@ -17,38 +14,12 @@ public class ColoringRenderer {
     }
 
     public void render(ColoringGrid grid, OrthographicCamera camera) {
-        Vector2 camPos = new Vector2(camera.position.x, camera.position.y);
-        float camRadius = RENDER_SIZE * camera.zoom / 2;
-        float camMinX = camPos.x - camRadius;
-        float camMinY = camPos.y - camRadius;
-        float camMaxX = camPos.x + camRadius;
-        float camMaxY = camPos.y + camRadius;
-
+        Texture texture = new Texture(grid.asPixmap());
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        batch.setColor(Color.CYAN);
-        BitSet bits = grid.asBitSet();
-        for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
-            int startIndex = i;
-            float worldX = getWorldX(startIndex);
-            float worldY = getWorldY(startIndex);
-            if (worldX < camMinX || worldX > camMaxX || worldY < camMinY) continue;
-            if (worldY > camMaxY) break;
-            while (i + 1 < bits.length() && bits.get(i + 1) && i % COLORING_SIZE == worldY) i++;
-            int totalCells = i - startIndex + 1;
-            float width = (float) totalCells / COLORING_RESOLUTION;
-            float height = 1f / COLORING_RESOLUTION;
-            batch.draw(whitePixel, worldX, worldY, width, height);
-        }
+        batch.draw(texture, -RENDER_SIZE / 2f, -RENDER_SIZE / 2f, RENDER_SIZE, RENDER_SIZE);
         batch.end();
-    }
-
-    private static float getWorldX(int index) {
-        return (float) (index % COLORING_SIZE) / COLORING_RESOLUTION - RENDER_SIZE / 2f;
-    }
-
-    private static float getWorldY(int index) {
-        return (float) (index / COLORING_SIZE) / COLORING_RESOLUTION - RENDER_SIZE / 2f;
+        texture.dispose();
     }
 
     public void dispose() {

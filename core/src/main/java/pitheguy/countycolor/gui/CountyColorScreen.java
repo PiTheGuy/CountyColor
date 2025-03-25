@@ -20,7 +20,7 @@ import java.util.Base64;
 import java.util.BitSet;
 
 public class CountyColorScreen implements Screen, InputProcessor {
-    private static final float COMPLETION_PERCENTAGE = 0.992f;
+    private static final float COMPLETION_PERCENTAGE = 0.99f;
     private final Game game;
     private final String county;
     private final String stateId;
@@ -185,7 +185,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private boolean canColor(Vector2 pos) {
-        int numPoints = 16;
+        int numPoints = 32;
         for (int i = 0; i < numPoints; i++) {
             float angle = (float)(i * Math.PI * 2 / numPoints); // 0 to 2π
             float dx = brushSize * (float)Math.cos(angle);
