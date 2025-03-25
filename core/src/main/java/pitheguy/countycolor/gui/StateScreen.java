@@ -5,16 +5,18 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.*;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import pitheguy.countycolor.CountyColor;
-import pitheguy.countycolor.render.ColoringGrid;
+import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.StateRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
-import pitheguy.countycolor.util.Util;
 
 import java.util.*;
+import java.util.List;
 
 public class StateScreen implements Screen, InputProcessor {
     private final Game game;
@@ -22,7 +24,10 @@ public class StateScreen implements Screen, InputProcessor {
     private final OrthographicCamera camera;
     private final StateRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
-    private final List<String> completedCounties;
+    private final CountyData countyData;
+    private final Stage stage;
+    private boolean pendingColorSelection;
+    private String pendingCounty;
 
     public StateScreen(Game game, String state) {
         this.game = game;
@@ -31,19 +36,55 @@ public class StateScreen implements Screen, InputProcessor {
         camera.zoom = 1;
         renderer = new StateRenderer(state);
         transitionHelper = new CameraTransitionHelper(game, camera);
-        completedCounties = loadCompletedCounties();
-        Gdx.input.setInputProcessor(this);
+        countyData = loadCountyData();
+        stage = new Stage();
+        Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
     @Override
     public void dispose() {
         renderer.dispose();
+        stage.dispose();
     }
 
     @Override
     public void render(float delta) {
         transitionHelper.update(delta);
-        renderer.renderState(camera, completedCounties);
+        renderer.renderState(camera, countyData.completed());
+        stage.act(delta);
+        stage.draw();
+        if (pendingColorSelection && !transitionHelper.isInTransition()) {
+            showColorSelection();
+            pendingColorSelection = false;
+        }
+    }
+
+    private void showColorSelection() {
+        stage.clear();
+        Skin skin = new Skin(Gdx.files.internal("skin.json"));
+        Group group = new Group();
+        Label label = new Label("Choose a color", skin);
+        label.setPosition(100 - label.getWidth() / 2, 50);
+        group.addActor(label);
+        for (int i = 0; i < 4; i++) {
+            MapColor color = MapColor.values()[i];
+            Button.ButtonStyle tintedStyle = new Button.ButtonStyle(skin.get("colored", Button.ButtonStyle.class));
+            tintedStyle.up = skin.newDrawable(tintedStyle.up, color.getColor());
+            tintedStyle.down = skin.newDrawable(tintedStyle.down, color.getColor());
+            tintedStyle.over = skin.newDrawable(tintedStyle.over, color.getColor());
+            Button button = new Button(tintedStyle);
+            button.setSize(50, 50);
+            button.setPosition(i * 50, 0);
+            button.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    game.setScreen(new CountyColorScreen(game, pendingCounty, StateRenderer.getIdForState(state), color));
+                }
+            });
+            group.addActor(button);
+        }
+        group.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f - 50);
+        stage.addActor(group);
     }
 
     private Vector3 getMouseWorldCoords() {
@@ -54,28 +95,43 @@ public class StateScreen implements Screen, InputProcessor {
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
         Vector3 mouseWorld = getMouseWorldCoords();
         String selectedCounty = renderer.getCountyAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
-        if (selectedCounty.isEmpty() || completedCounties.contains(selectedCounty)) return false;
+        if (selectedCounty.isEmpty() || countyData.completed().containsKey(selectedCounty)) return false;
         Zoom zoom = renderer.getTargetZoom(selectedCounty);
-        transitionHelper.transition(zoom.center(), zoom.zoom(), new CountyColorScreen(game, selectedCounty, StateRenderer.getIdForState(state)));
+        if (countyData.started().contains(selectedCounty)) {
+            CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty, StateRenderer.getIdForState(state));
+            transitionHelper.transition(zoom.center(), zoom.zoom(), targetScreen);
+        } else {
+            transitionHelper.transition(zoom.center(), zoom.zoom(), null);
+            pendingColorSelection = true;
+            pendingCounty = selectedCounty;
+        }
         return true;
     }
 
-    private List<String> loadCompletedCounties() {
+    private CountyData loadCountyData() {
         FileHandle dataHandle = Gdx.files.local("data.json");
-        if (!dataHandle.exists()) return List.of();
+        if (!dataHandle.exists()) return CountyData.EMPTY;
         JsonObject json = JsonParser.parseReader(dataHandle.reader()).getAsJsonObject();
         String stateId = StateRenderer.getIdForState(state);
-        if (!json.has(stateId)) return List.of();
+        if (!json.has(stateId)) return CountyData.EMPTY;
         JsonObject state = json.get(stateId).getAsJsonObject();
-        List<String> completedCounties = new ArrayList<>();
+        Map<String, MapColor> completed = new HashMap<>();
+        List<String> started = new ArrayList<>();
         for (String county : state.keySet()) {
             JsonObject countyJson = state.get(county).getAsJsonObject();
-            if (countyJson.has("complete") && countyJson.get("complete").getAsBoolean()) completedCounties.add(county);
+            if (countyJson.has("complete") && countyJson.get("complete").getAsBoolean())
+                completed.put(county, MapColor.fromSerializedName(countyJson.get("color").getAsString()));
+            else started.add(county);
         }
-        return completedCounties;
+        return new CountyData(completed, started);
     }
 
-    @Override public void resize(int width, int height) {}
+    @Override
+    public void resize(int width, int height) {
+        camera.viewportWidth = width;
+        camera.viewportHeight = height;
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void show() {}
@@ -88,4 +144,8 @@ public class StateScreen implements Screen, InputProcessor {
     @Override public boolean touchDragged(int screenX, int screenY, int pointer) { return false; }
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
     @Override public boolean scrolled(float amountX, float amountY) { return false; }
+
+    private record CountyData(Map<String, MapColor> completed, List<String> started) {
+        public static final CountyData EMPTY = new CountyData(Map.of(), List.of());
+    }
 }

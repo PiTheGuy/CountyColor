@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ShortArray;
 import com.google.gson.*;
+import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.render.util.RenderUtil;
 
@@ -40,14 +41,18 @@ public class CountyRenderer {
         shapeRenderer.end();
     }
 
-    public void renderCountyFilled(Camera camera, float scale) {
+    public void renderCountyFilled(Camera camera, float scale, MapColor color) {
         ensureLoadingFinished();
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.BLACK);
         for (int i = 0; i < shapes.size(); i++) {
+            shapeRenderer.setColor(color.getColor());
             List<Vector2> points = shapes.get(i);
             RenderUtil.renderFilledPolygon(shapeRenderer, points, triangles.get(i), scale);
+            shapeRenderer.setColor(Color.BLACK);
+            List<Vector2> pointsCopy = new ArrayList<>(points);
+            pointsCopy.replaceAll(vector2 -> vector2.cpy().scl(scale));
+            RenderUtil.drawThickPolyline(shapeRenderer, pointsCopy, (float) OUTLINE_THICKNESS, RENDER_SIZE);
         }
         shapeRenderer.end();
     }

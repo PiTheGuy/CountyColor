@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ShortArray;
 import com.google.gson.*;
+import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.util.RenderConst;
@@ -29,7 +30,7 @@ public class StateRenderer {
         this.shapesFuture = loadState(state);
     }
 
-    public void renderState(OrthographicCamera camera, List<String> completedCounties) {
+    public void renderState(OrthographicCamera camera, Map<String, MapColor> completedCounties) {
         ensureLoadingFinished();
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -38,12 +39,15 @@ public class StateRenderer {
         shapeRenderer.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.BLACK);
         for (String county : shapes.keySet()) {
             PolygonCollection countyPolygons = shapes.get(county);
-            if (completedCounties.contains(county)) for (List<Vector2> points : countyPolygons.getPolygons())
-                RenderUtil.renderFilledPolygon(shapeRenderer, points, getTriangles(points), 1);
-            else for (List<Vector2> points : countyPolygons.getPolygons()) {
+            if (completedCounties.containsKey(county)) {
+                shapeRenderer.setColor(completedCounties.get(county).getColor());
+                for (List<Vector2> points : countyPolygons.getPolygons())
+                    RenderUtil.renderFilledPolygon(shapeRenderer, points, getTriangles(points), 1);
+            }
+            shapeRenderer.setColor(Color.BLACK);
+            for (List<Vector2> points : countyPolygons.getPolygons()) {
                 List<Vector2> pointsCopy = new ArrayList<>(points);
                 pointsCopy.replaceAll(Vector2::cpy);
                 RenderUtil.drawThickPolyline(shapeRenderer, pointsCopy, RenderConst.OUTLINE_THICKNESS * camera.zoom, RenderConst.RENDER_SIZE);

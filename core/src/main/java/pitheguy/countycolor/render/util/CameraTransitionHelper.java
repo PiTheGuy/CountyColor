@@ -37,10 +37,14 @@ public class CameraTransitionHelper {
         if (diff.len() < 1f && Math.abs(zoomDiff) < 0.01f) {
             camera.zoom = targetZoom;
             camera.position.set(targetPos.x, targetPos.y, 0);
-            game.setScreen(targetScreen);
+            if (targetScreen != null) game.setScreen(targetScreen);
             targetPos = null;
             targetScreen = null;
         }
         camera.update();
+    }
+
+    public boolean isInTransition() {
+        return targetPos != null;
     }
 }

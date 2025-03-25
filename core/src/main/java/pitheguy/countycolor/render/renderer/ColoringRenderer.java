@@ -2,7 +2,7 @@ package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import pitheguy.countycolor.render.ColoringGrid;
+import pitheguy.countycolor.coloring.ColoringGrid;
 
 import static pitheguy.countycolor.render.util.RenderConst.*;
 

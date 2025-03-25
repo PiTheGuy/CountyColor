@@ -8,7 +8,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.*;
 import com.google.gson.*;
-import pitheguy.countycolor.render.ColoringGrid;
+import pitheguy.countycolor.coloring.ColoringGrid;
+import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.renderer.ColoringRenderer;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
@@ -53,6 +54,18 @@ public class CountyColorScreen implements Screen, InputProcessor {
         countyRenderer = new CountyRenderer(county, stateId);
     }
 
+    public CountyColorScreen(Game game, String county, String stateId, MapColor color) {
+        this.game = game;
+        this.county = county;
+        this.stateId = stateId;
+        camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        camera.zoom = 1;
+        transitionHelper = new CameraTransitionHelper(game, camera);
+        Gdx.input.setInputProcessor(this);
+        coloringGrid = new ColoringGrid(color);
+        countyRenderer = new CountyRenderer(county, stateId);
+    }
+
     @Override
     public void render(float delta) {
         if (totalPixels == -1)
@@ -62,13 +75,13 @@ public class CountyColorScreen implements Screen, InputProcessor {
         Gdx.gl.glClearColor(1, 1, 1, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         if (inTransition) {
-            countyRenderer.renderCountyFilled(camera, 1);
+            countyRenderer.renderCountyFilled(camera, 1, coloringGrid.getColor());
             return;
         }
         coloringRenderer.render(coloringGrid, camera);
         countyRenderer.renderCounty(camera);
         cursorRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        cursorRenderer.setColor(canColor() ? Color.BLACK : Color.RED);
+        cursorRenderer.setColor(canColor() ? coloringGrid.getColor().getColor() : Color.RED);
         cursorRenderer.circle(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY(), brushSize / camera.zoom);
         cursorRenderer.end();
         batch.begin();
@@ -83,7 +96,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         if (getCompletion() == 1) {
             save();
             inTransition = true;
-            transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, stateId));
+            transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, stateId, coloringGrid.getColor()));
         }
     }
 
@@ -224,6 +237,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         JsonObject json = dataHandle.exists() ? JsonParser.parseReader(dataHandle.reader()).getAsJsonObject() : new JsonObject();
         JsonObject state = GsonUtil.getOrCreateChild(json, stateId);
         JsonObject county = GsonUtil.getOrCreateChild(state, this.county);
+        county.addProperty("color", coloringGrid.getColor().getSerializedName());
         if (getCompletion() < 1)
             county.addProperty("coloredPoints", Base64.getEncoder().encodeToString(Util.compress(coloringGrid.asBitSet().toByteArray())));
         else {
@@ -235,16 +249,15 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     private ColoringGrid load() {
         FileHandle dataHandle = Gdx.files.local("data.json");
-        if (!dataHandle.exists()) return new ColoringGrid();
+        if (!dataHandle.exists()) throw new IllegalStateException("No saved data for county");
         JsonObject json = JsonParser.parseReader(dataHandle.reader()).getAsJsonObject();
-        if (!json.has(stateId)) return new ColoringGrid();
+        if (!json.has(stateId)) throw new IllegalStateException("No saved data for county");
         JsonObject state = json.get(stateId).getAsJsonObject();
-        if (!state.has(county)) return new ColoringGrid();
+        if (!state.has(county)) throw new IllegalStateException("No saved data for county");
         JsonObject county = state.get(this.county).getAsJsonObject();
         if (county.has("complete") && county.get("complete").getAsBoolean())
             throw new IllegalStateException("Tried to load an already completed county");
-        BitSet bitSet = BitSet.valueOf(Util.decompress(Base64.getDecoder().decode(county.get("coloredPoints").getAsString())));
-        return ColoringGrid.fromBitSet(bitSet);
+        return ColoringGrid.fromJson(county);
     }
 
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }

@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.render.renderer.StateRenderer;
 
@@ -14,8 +15,10 @@ public class CountyCompleteScreen implements Screen {
     private final Stage stage;
     private final OrthographicCamera camera;
     private final CountyRenderer countyRenderer;
+    private final MapColor color;
 
-    public CountyCompleteScreen(Game game, String county, String stateId) {
+    public CountyCompleteScreen(Game game, String county, String stateId, MapColor color) {
+        this.color = color;
         countyRenderer = new CountyRenderer(county, stateId);
         stage = new Stage();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -44,7 +47,7 @@ public class CountyCompleteScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         stage.act(delta);
         stage.draw();
-        countyRenderer.renderCountyFilled(camera, 0.5f);
+        countyRenderer.renderCountyFilled(camera, 0.5f, color);
     }
 
     @Override public void show() {}
