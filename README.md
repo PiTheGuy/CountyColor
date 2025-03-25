@@ -2,12 +2,14 @@
 
 A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
 
-This project was generated with a template including simple application launchers and an `ApplicationListener` implementation that listens to user input.
+This project was generated with a template including simple application launchers and an `ApplicationAdapter` extension that draws libGDX logo.
 
 ## Platforms
 
 - `core`: Main module with the application logic shared by all platforms.
 - `lwjgl3`: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
+- `android`: Android mobile platform. Needs Android SDK.
+- `ios-moe`: iOS mobile backend using Multi-OS Engine.
 
 ## Gradle
 
@@ -19,6 +21,7 @@ Useful Gradle tasks and flags:
 - `--daemon`: thanks to this flag, Gradle daemon will be used to run chosen tasks.
 - `--offline`: when using this flag, cached dependency archives will be used.
 - `--refresh-dependencies`: this flag forces validation of all dependencies. Useful for snapshot versions.
+- `android:lint`: performs Android project validation.
 - `build`: builds sources and archives of every project.
 - `cleanEclipse`: removes Eclipse project data.
 - `cleanIdea`: removes IntelliJ project data.
