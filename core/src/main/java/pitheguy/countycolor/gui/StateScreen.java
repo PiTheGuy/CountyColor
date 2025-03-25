@@ -8,8 +8,8 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.*;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.badlogic.gdx.utils.JsonReader;
+import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.StateRenderer;
@@ -115,18 +115,24 @@ public class StateScreen implements Screen, InputProcessor {
     private CountyData loadCountyData() {
         FileHandle dataHandle = Gdx.files.local("data.json");
         if (!dataHandle.exists()) return CountyData.EMPTY;
-        JsonObject json = JsonParser.parseReader(dataHandle.reader()).getAsJsonObject();
+
+        JsonReader reader = new JsonReader();
+        JsonValue root = reader.parse(dataHandle);
         String stateId = StateRenderer.getIdForState(state);
-        if (!json.has(stateId)) return CountyData.EMPTY;
-        JsonObject state = json.get(stateId).getAsJsonObject();
+        JsonValue state = root.get(stateId);
+        if (state == null) return CountyData.EMPTY;
+
         Map<String, MapColor> completed = new HashMap<>();
         List<String> started = new ArrayList<>();
-        for (String county : state.keySet()) {
-            JsonObject countyJson = state.get(county).getAsJsonObject();
-            if (countyJson.has("complete") && countyJson.get("complete").getAsBoolean())
-                completed.put(county, MapColor.fromSerializedName(countyJson.get("color").getAsString()));
-            else started.add(county);
+
+        for (JsonValue county = state.child; county != null; county = county.next) {
+            String countyName = county.name;
+            if (county.getBoolean("complete", false)) {
+                String colorName = county.getString("color");
+                completed.put(countyName, MapColor.fromSerializedName(colorName));
+            } else started.add(countyName);
         }
+
         return new CountyData(completed, started);
     }
 

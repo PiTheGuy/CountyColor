@@ -3,7 +3,8 @@ package pitheguy.countycolor.render;
 import com.badlogic.gdx.math.Vector2;
 import pitheguy.countycolor.render.util.RenderConst;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 
 public class PolygonCollection {
     private final List<List<Vector2>> polygons;

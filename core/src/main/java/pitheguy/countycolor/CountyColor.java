@@ -1,8 +1,7 @@
 package pitheguy.countycolor;
 
-import com.badlogic.gdx.*;
+import com.badlogic.gdx.Game;
 import pitheguy.countycolor.gui.CountryScreen;
-import pitheguy.countycolor.gui.StateScreen;
 
 public class CountyColor extends Game {
     @Override

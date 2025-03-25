@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import pitheguy.countycolor.coloring.ColoringGrid;
 
-import static pitheguy.countycolor.render.util.RenderConst.*;
+import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class ColoringRenderer {
     private final Texture whitePixel = createWhiteTexture();

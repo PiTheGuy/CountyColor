@@ -7,20 +7,21 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.*;
-import com.badlogic.gdx.scenes.scene2d.*;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.google.gson.*;
+import com.badlogic.gdx.utils.*;
 import pitheguy.countycolor.coloring.ColoringGrid;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.renderer.ColoringRenderer;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
 import pitheguy.countycolor.render.util.RenderConst;
-import pitheguy.countycolor.util.GsonUtil;
 import pitheguy.countycolor.util.Util;
 
+import java.io.StringWriter;
 import java.util.Base64;
 
 public class CountyColorScreen implements Screen, InputProcessor {
@@ -259,32 +260,52 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     private void save() {
         if (coloringGrid.coloredPoints() == 0) return;
+
         FileHandle dataHandle = Gdx.files.local("data.json");
-        JsonObject json = dataHandle.exists() ? JsonParser.parseReader(dataHandle.reader()).getAsJsonObject() : new JsonObject();
-        JsonObject state = GsonUtil.getOrCreateChild(json, stateId);
-        JsonObject county = GsonUtil.getOrCreateChild(state, this.county);
-        county.addProperty("color", coloringGrid.getColor().getSerializedName());
-        if (getCompletion() < 1)
-            county.addProperty("coloredPoints", Base64.getEncoder().encodeToString(Util.compress(coloringGrid.asBitSet().toByteArray())));
-        else {
-            if (county.has("coloredPoints")) county.remove("coloredPoints");
-            county.addProperty("complete", true);
+        Json json = new Json();
+        JsonReader reader = new JsonReader();
+        JsonValue root = reader.parse(Gdx.files.internal("counties.json"));
+        JsonValue state = root.get(stateId);
+        if (state == null) {
+            state = new JsonValue(JsonValue.ValueType.object);
+            root.addChild(stateId, state);
         }
-        dataHandle.writeString(json.toString(), false);
+
+        JsonValue countyJson = state.get(county);
+        if (countyJson == null) {
+            countyJson = new JsonValue(JsonValue.ValueType.object);
+            state.addChild(county, countyJson);
+        }
+
+        countyJson.addChild("color", new JsonValue(coloringGrid.getColor().getSerializedName()));
+
+        if (getCompletion() < 1) {
+            byte[] compressed = Util.compress(coloringGrid.asBitSet().toByteArray());
+            String encoded = Base64.getEncoder().encodeToString(compressed);
+            countyJson.addChild("coloredPoints", new JsonValue(encoded));
+            countyJson.remove("complete");
+        } else {
+            countyJson.remove("coloredPoints");
+            countyJson.addChild("complete", new JsonValue(true));
+        }
+
+        dataHandle.writeString(root.toJson(JsonWriter.OutputType.json), false);
     }
 
     private ColoringGrid load() {
         FileHandle dataHandle = Gdx.files.local("data.json");
         if (!dataHandle.exists()) throw new IllegalStateException("No saved data for county");
-        JsonObject json = JsonParser.parseReader(dataHandle.reader()).getAsJsonObject();
-        if (!json.has(stateId)) throw new IllegalStateException("No saved data for county");
-        JsonObject state = json.get(stateId).getAsJsonObject();
-        if (!state.has(county)) throw new IllegalStateException("No saved data for county");
-        JsonObject county = state.get(this.county).getAsJsonObject();
-        if (county.has("complete") && county.get("complete").getAsBoolean())
+        JsonReader reader = new JsonReader();
+        JsonValue root = reader.parse(dataHandle);
+        JsonValue state = root.get(stateId);
+        if (state == null) throw new IllegalStateException("No saved data for county");
+        JsonValue countyJson = state.get(county);
+        if (countyJson == null) throw new IllegalStateException("No saved data for county");
+        if (countyJson.getBoolean("complete", false))
             throw new IllegalStateException("Tried to load an already completed county");
-        return ColoringGrid.fromJson(county);
+        return ColoringGrid.fromJson(countyJson);
     }
+
 
     @Override
     public void resize(int width, int height) {

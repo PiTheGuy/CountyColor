@@ -1,10 +1,12 @@
 package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.google.gson.*;
+import com.badlogic.gdx.utils.JsonReader;
+import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.util.RenderConst;
@@ -55,39 +57,45 @@ public class CountryRenderer {
     }
 
     private Map<String, PolygonCollection> loadShapes() {
-        JsonArray array = JsonParser.parseReader(Gdx.files.internal("states.geojson").reader())
-            .getAsJsonObject().getAsJsonArray("features");
+        JsonReader reader = new JsonReader();
+        JsonValue root = reader.parse(Gdx.files.internal("states.geojson"));
+        JsonValue array = root.get("features");
+
         Map<String, List<List<Vector2>>> shapes = new HashMap<>();
 
-        for (JsonElement countryElement : array) {
-            JsonObject country = countryElement.getAsJsonObject();
-            JsonObject properties = country.getAsJsonObject("properties");
-            String stateName = properties.get("NAME").getAsString();
+        for (JsonValue country : array) {
+            JsonValue properties = country.get("properties");
+            String stateName = properties.getString("NAME");
+
             if (FILTERED_STATES.contains(stateName)) continue;
-            if (RENDERED_SEPARATELY.contains(stateName)) continue; //TODO render these separately
+            if (RENDERED_SEPARATELY.contains(stateName)) continue; // TODO render these separately
 
-            JsonObject geometry = country.getAsJsonObject("geometry");
-            String type = geometry.get("type").getAsString();
-            JsonArray coordinates = geometry.getAsJsonArray("coordinates");
+            JsonValue geometry = country.get("geometry");
+            String type = geometry.getString("type");
+            JsonValue coordinates = geometry.get("coordinates");
 
-            List<JsonArray> shapesJson = switch (type) {
+            List<JsonValue> shapesJson = switch (type) {
                 case "Polygon" -> List.of(coordinates);
-                case "MultiPolygon" -> coordinates.asList().stream().map(JsonElement::getAsJsonArray).toList();
+                case "MultiPolygon" -> {
+                    List<JsonValue> polys = new ArrayList<>();
+                    for (JsonValue polygon : coordinates) polys.add(polygon);
+                    yield polys;
+                }
                 default -> throw new IllegalStateException("Unexpected type: " + type);
             };
 
             List<List<Vector2>> polygons = new ArrayList<>();
-
-            for (JsonArray arr : shapesJson) {
+            for (JsonValue arr : shapesJson) {
+                JsonValue outer = arr.get(0); // only use outer ring
                 List<Vector2> points = new ArrayList<>();
-                for (JsonElement pointElement : arr.get(0).getAsJsonArray()) {
-                    JsonArray point = pointElement.getAsJsonArray();
-                    double lat = point.get(0).getAsDouble();
-                    double lng = point.get(1).getAsDouble();
-                    points.add(new Vector2((float) lat, (float) lng));
+                for (JsonValue point : outer) {
+                    float lat = point.getFloat(0);
+                    float lng = point.getFloat(1);
+                    points.add(new Vector2(lat, lng));
                 }
                 polygons.add(points);
             }
+
             shapes.put(stateName, polygons);
         }
         float minX = (float) shapes.values().stream()

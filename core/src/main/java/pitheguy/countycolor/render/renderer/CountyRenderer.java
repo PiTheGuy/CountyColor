@@ -4,16 +4,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.ShortArray;
-import com.google.gson.*;
+import com.badlogic.gdx.utils.*;
 import pitheguy.countycolor.coloring.MapColor;
-import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.render.util.RenderUtil;
 
-import java.nio.ShortBuffer;
 import java.util.*;
+import java.util.Collections;
 import java.util.concurrent.*;
 
 import static pitheguy.countycolor.render.util.RenderConst.*;
@@ -71,37 +68,38 @@ public class CountyRenderer {
     private static Future<List<List<Vector2>>> loadCounty(String county, String stateId) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         return executor.submit(() -> {
-            JsonArray array = JsonParser.parseReader(Gdx.files.internal("counties.json").reader())
-                .getAsJsonObject().getAsJsonArray("features");
-            for (JsonElement countryElement : array) {
-                JsonObject country = countryElement.getAsJsonObject();
-
-                JsonObject properties = country.getAsJsonObject("properties");
-                if (!properties.get("STATEFP").getAsString().equals(stateId)) continue;
-                if (!properties.get("NAME").getAsString().equals(county)) continue;
-
-                JsonObject geometry = country.getAsJsonObject("geometry");
-                String type = geometry.get("type").getAsString();
-                JsonArray coordinates = geometry.getAsJsonArray("coordinates");
-
-                List<JsonArray> shapesJson = switch (type) {
+            JsonReader reader = new JsonReader();
+            JsonValue root = reader.parse(Gdx.files.internal("counties.json"));
+            JsonValue array = root.get("features");
+            for (JsonValue country : array) {
+                JsonValue properties = country.get("properties");
+                if (!properties.getString("STATEFP").equals(stateId)) continue;
+                if (!properties.getString("NAME").equals(county)) continue;
+                JsonValue geometry = country.get("geometry");
+                String type = geometry.getString("type");
+                JsonValue coordinates = geometry.get("coordinates");
+                List<JsonValue> shapesJson = switch (type) {
                     case "Polygon" -> List.of(coordinates);
-                    case "MultiPolygon" -> coordinates.asList().stream().map(JsonElement::getAsJsonArray).toList();
+                    case "MultiPolygon" -> {
+                        List<JsonValue> polys = new ArrayList<>();
+                        for (JsonValue polygon : coordinates) {
+                            polys.add(polygon);
+                        }
+                        yield polys;
+                    }
                     default -> throw new IllegalStateException("Unexpected type: " + type);
                 };
-
                 List<List<Vector2>> shapes = new ArrayList<>();
-                for (JsonArray arr : shapesJson) {
+                for (JsonValue arr : shapesJson) {
+                    JsonValue outer = arr.get(0); // use only the outer ring
                     List<Vector2> points = new ArrayList<>();
-                    for (JsonElement pointElement : arr.get(0).getAsJsonArray()) {
-                        JsonArray point = pointElement.getAsJsonArray();
-                        double lat = point.get(0).getAsDouble();
-                        double lng = point.get(1).getAsDouble();
-                        points.add(new Vector2((float) lat, (float) lng));
+                    for (JsonValue point : outer) {
+                        float lat = point.getFloat(0);
+                        float lng = point.getFloat(1);
+                        points.add(new Vector2(lat, lng));
                     }
                     shapes.add(points);
                 }
-
                 float minX = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).min().getAsDouble();
                 float minY = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.y).min().getAsDouble();
                 float maxX = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).max().getAsDouble();
