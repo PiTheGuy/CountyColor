@@ -204,7 +204,7 @@ public class StateRenderer {
         float maxY = countyPolygons.getMaxY();
         float xRange = (maxX - minX) / 2;
         float yRange = (maxY - minY) / 2;
-        float zoom = Math.max(xRange, yRange);
+        float zoom = Math.max(xRange, yRange) * RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         float xCenter = (minX + maxX) / 4f * RenderConst.RENDER_SIZE;
         float yCenter = (minY + maxY) / 4f * RenderConst.RENDER_SIZE;
         return new Zoom(new Vector2(xCenter, yCenter), zoom);

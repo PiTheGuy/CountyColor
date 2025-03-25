@@ -2,14 +2,13 @@ package pitheguy.countycolor.gui;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import pitheguy.countycolor.CountyColor;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.CountryRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
+import pitheguy.countycolor.render.util.RenderConst;
 
 public class CountryScreen implements Screen, InputProcessor {
     private final CountyColor game;
@@ -20,7 +19,8 @@ public class CountryScreen implements Screen, InputProcessor {
     public CountryScreen(CountyColor game) {
         this.game = game;
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.zoom = 1;
+        camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
+        camera.update();
         renderer = new CountryRenderer();
         transitionHelper = new CameraTransitionHelper(game, camera);
         Gdx.input.setInputProcessor(this);
@@ -51,7 +51,14 @@ public class CountryScreen implements Screen, InputProcessor {
         return true;
     }
 
-    @Override public void resize(int width, int height) {}
+    @Override
+    public void resize(int width, int height) {
+        camera.viewportWidth = width;
+        camera.viewportHeight = height;
+        camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
+        camera.update();
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void show() {}

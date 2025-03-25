@@ -16,12 +16,14 @@ public class CountyCompleteScreen implements Screen {
     private final OrthographicCamera camera;
     private final CountyRenderer countyRenderer;
     private final MapColor color;
+    private final StateScreen stateScreen;
 
     public CountyCompleteScreen(Game game, String county, String stateId, MapColor color) {
         this.color = color;
         countyRenderer = new CountyRenderer(county, stateId);
         stage = new Stage();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        stateScreen = new StateScreen(game, StateRenderer.getStateFromId(stateId));
         Gdx.input.setInputProcessor(stage);
         Skin skin = new Skin(Gdx.files.internal("skin.json"));
         TextButton button = new TextButton("Continue", skin);
@@ -30,7 +32,7 @@ public class CountyCompleteScreen implements Screen {
         button.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new StateScreen(game, StateRenderer.getStateFromId(stateId)));
+                game.setScreen(stateScreen);
             }
         });
         stage.addActor(button);

@@ -1,7 +1,6 @@
 package pitheguy.countycolor.coloring;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.*;
 import com.google.gson.JsonObject;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.Util;
@@ -12,10 +11,10 @@ import java.util.BitSet;
 public class ColoringGrid {
     private final Pixmap pixmap;
     private final BitSet bitSet;
-    private final MapColor color;
+    private MapColor color;
 
-    public ColoringGrid(MapColor color) {
-        this(RenderConst.COLORING_SIZE, color);
+    public ColoringGrid() {
+        this(RenderConst.COLORING_SIZE, null);
     }
 
     private ColoringGrid(int gridSize, MapColor color) {
@@ -23,7 +22,7 @@ public class ColoringGrid {
         pixmap = new Pixmap(gridSize, gridSize, Pixmap.Format.RGBA8888);
         pixmap.setColor(new Color(0, 0, 0, 0));
         pixmap.fill();
-        pixmap.setColor(color.getColor());
+        if (color != null) pixmap.setColor(color.getColor());
         bitSet = new BitSet(gridSize * gridSize);
     }
 
@@ -45,6 +44,11 @@ public class ColoringGrid {
         return new ColoringGrid(pixmap, bitSet, color);
     }
 
+    public void setColor(MapColor color) {
+        this.color = color;
+        pixmap.setColor(color.getColor());
+    }
+
     public Pixmap asPixmap() {
         return pixmap;
     }
@@ -54,6 +58,7 @@ public class ColoringGrid {
     }
 
     public MapColor getColor() {
+        if (color == null) throw new IllegalStateException("Color hasn't been set yet");
         return color;
     }
 
@@ -68,5 +73,9 @@ public class ColoringGrid {
 
     public int coloredPoints() {
         return bitSet.cardinality();
+    }
+
+    public void dispose() {
+        pixmap.dispose();
     }
 }

@@ -7,6 +7,10 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.*;
+import com.badlogic.gdx.scenes.scene2d.*;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.google.gson.*;
 import pitheguy.countycolor.coloring.ColoringGrid;
 import pitheguy.countycolor.coloring.MapColor;
@@ -18,7 +22,6 @@ import pitheguy.countycolor.util.GsonUtil;
 import pitheguy.countycolor.util.Util;
 
 import java.util.Base64;
-import java.util.BitSet;
 
 public class CountyColorScreen implements Screen, InputProcessor {
     private static final float COMPLETION_PERCENTAGE = 0.99f;
@@ -26,9 +29,11 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private final String county;
     private final String stateId;
     private final OrthographicCamera camera;
+    private final OrthographicCamera hudCamera;
     private final ShapeRenderer cursorRenderer = new ShapeRenderer();
     private final CountyRenderer countyRenderer;
     private final ColoringRenderer coloringRenderer = new ColoringRenderer();
+    private final Stage stage = new Stage();
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
     private final CameraTransitionHelper transitionHelper;
@@ -36,34 +41,48 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private final Vector2 lastColor = new Vector2();
     private boolean dragging = false;
     private boolean coloring = false;
+    private float maxZoom;
     private float brushSize = 5;
     private final ColoringGrid coloringGrid;
     private int totalPixels = -1;
     private float timeSinceSave = 0f;
     private boolean inTransition = false;
+    private Slider slider;
 
-    public CountyColorScreen(Game game, String county, String stateId) {
+    public CountyColorScreen(Game game, String county, String stateId, boolean load) {
         this.game = game;
         this.county = county;
         this.stateId = stateId;
+        maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.zoom = 1;
+        hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        camera.zoom = maxZoom;
+        camera.update();
         transitionHelper = new CameraTransitionHelper(game, camera);
-        Gdx.input.setInputProcessor(this);
-        coloringGrid = load();
+        if (load) Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
+        coloringGrid = load ? load() : new ColoringGrid();
         countyRenderer = new CountyRenderer(county, stateId);
+        initStage();
     }
 
-    public CountyColorScreen(Game game, String county, String stateId, MapColor color) {
-        this.game = game;
-        this.county = county;
-        this.stateId = stateId;
-        camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.zoom = 1;
-        transitionHelper = new CameraTransitionHelper(game, camera);
-        Gdx.input.setInputProcessor(this);
-        coloringGrid = new ColoringGrid(color);
-        countyRenderer = new CountyRenderer(county, stateId);
+    private void initStage() {
+        stage.clear();
+        Skin skin = new Skin(Gdx.files.internal("skin.json"));
+        slider = new Slider(1, 75, 1, false, skin);
+        slider.setSize(200, 20);
+        slider.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() - 30);
+        slider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                brushSize = slider.getValue();
+            }
+        });
+        stage.addActor(slider);
+    }
+
+    public void prepare(MapColor color) {
+        coloringGrid.setColor(color);
+        Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
     @Override
@@ -88,6 +107,8 @@ public class CountyColorScreen implements Screen, InputProcessor {
         font.draw(batch, getProgressString(), 10, Gdx.graphics.getHeight() - 10);
         font.draw(batch, Gdx.graphics.getFramesPerSecond() + " FPS", Gdx.graphics.getWidth() - 100, Gdx.graphics.getHeight() - 10);
         batch.end();
+        stage.act(delta);
+        stage.draw();
         timeSinceSave += delta;
         if (timeSinceSave > 10f) {
             saveAsync();
@@ -147,12 +168,15 @@ public class CountyColorScreen implements Screen, InputProcessor {
         Vector3 mouseWorldBefore = getMouseWorldCoords();
         if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
             float zoomFactor = (amountY < 0) ? 0.9f : 1.1f;
-            camera.zoom = MathUtils.clamp(camera.zoom * zoomFactor, 0.1f, 1f);
+            camera.zoom = MathUtils.clamp(camera.zoom * zoomFactor, 0.1f, maxZoom);
             camera.update();
             Vector3 mouseWorldAfter = getMouseWorldCoords();
             Vector3 delta = mouseWorldBefore.sub(mouseWorldAfter);
             camera.position.add(delta.x, delta.y, 0);
-        } else brushSize = MathUtils.clamp(brushSize - amountY, 1, 75);
+        } else {
+            brushSize = MathUtils.clamp(brushSize - amountY, 1, 75);
+            slider.setValue(brushSize);
+        }
         return true;
     }
 
@@ -198,7 +222,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private boolean canColor(Vector2 pos) {
-        int numPoints = 32;
+        int numPoints = brushSize > 30 ? 64 : 32;
         for (int i = 0; i < numPoints; i++) {
             float angle = (float)(i * Math.PI * 2 / numPoints); // 0 to 2π
             float dx = brushSize * (float)Math.cos(angle);
@@ -223,6 +247,8 @@ public class CountyColorScreen implements Screen, InputProcessor {
         cursorRenderer.dispose();
         countyRenderer.dispose();
         coloringRenderer.dispose();
+        coloringGrid.dispose();
+        stage.dispose();
         batch.dispose();
         font.dispose();
     }
@@ -260,8 +286,21 @@ public class CountyColorScreen implements Screen, InputProcessor {
         return ColoringGrid.fromJson(county);
     }
 
+    @Override
+    public void resize(int width, int height) {
+        camera.viewportWidth = width;
+        camera.viewportHeight = height;
+        boolean zoomedOut = camera.zoom == maxZoom;
+        maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        camera.zoom = zoomedOut ? maxZoom : Math.min(camera.zoom, maxZoom);
+        camera.update();
+        hudCamera.setToOrtho(false, width, height);
+        cursorRenderer.setProjectionMatrix(hudCamera.combined);
+        batch.setProjectionMatrix(hudCamera.combined);
+        initStage();
+    }
+
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
-    @Override public void resize(int width, int height) {}
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void show() {}
