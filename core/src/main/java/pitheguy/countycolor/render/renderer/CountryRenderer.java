@@ -44,12 +44,10 @@ public class CountryRenderer {
         shapeRenderer.setColor(Color.BLACK);
         for (PolygonCollection county : shapes.values()) {
             for (List<Vector2> points : county.getPolygons()) {
-                List<Vector2> pointsCopy = new ArrayList<>(points);
-                pointsCopy.replaceAll(vector2 -> vector2.cpy().scl(RenderConst.RENDER_SIZE / 2f));
-                for (int i = 0; i < pointsCopy.size() - 1; i++) {
-                    Vector2 point = pointsCopy.get(i);
-                    Vector2 endPoint = pointsCopy.get(i + 1);
-                    shapeRenderer.line(point.x, point.y, endPoint.x, endPoint.y);
+                for (int i = 0; i < points.size() - 1; i++) {
+                    Vector2 point = points.get(i);
+                    Vector2 endPoint = points.get(i + 1);
+                    shapeRenderer.line(point.x * RenderConst.RENDER_SIZE / 2f, point.y * RenderConst.RENDER_SIZE / 2f, endPoint.x * RenderConst.RENDER_SIZE / 2f, endPoint.y * RenderConst.RENDER_SIZE / 2f);
                 }
             }
         }

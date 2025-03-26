@@ -145,19 +145,14 @@ public class StateScreen implements Screen, InputProcessor {
     private Future<CountyData> loadCountyData() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         return executor.submit(() -> {
-            FileHandle dataHandle = Gdx.files.local("data.json");
+            FileHandle dataHandle = Gdx.files.local("data/" + state + ".json");
             if (!dataHandle.exists()) return CountyData.EMPTY;
 
             JsonReader reader = new JsonReader();
             JsonValue root = reader.parse(dataHandle);
-            String stateId = StateRenderer.getIdForState(state);
-            JsonValue state = root.get(stateId);
-            if (state == null) return CountyData.EMPTY;
-
             Map<String, MapColor> completed = new HashMap<>();
             List<String> started = new ArrayList<>();
-
-            for (JsonValue county = state.child; county != null; county = county.next) {
+            for (JsonValue county = root.child; county != null; county = county.next) {
                 String countyName = county.name;
                 if (county.getBoolean("complete", false)) {
                     String colorName = county.getString("color");

@@ -15,8 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.*;
 import pitheguy.countycolor.coloring.ColoringGrid;
 import pitheguy.countycolor.coloring.MapColor;
-import pitheguy.countycolor.render.renderer.ColoringRenderer;
-import pitheguy.countycolor.render.renderer.CountyRenderer;
+import pitheguy.countycolor.render.renderer.*;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.Util;
@@ -248,21 +247,13 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private void save() {
         if (coloringGrid.coloredPoints() == 0) return;
 
-        FileHandle dataHandle = Gdx.files.local("data.json");
-        Json json = new Json();
+        FileHandle dataHandle = Gdx.files.local("data/" + StateRenderer.getStateFromId(stateId) + ".json");
         JsonReader reader = new JsonReader();
-        JsonValue root = reader.parse(Gdx.files.internal("counties.json"));
-        JsonValue state = root.get(stateId);
-        if (state == null) {
-            state = new JsonValue(JsonValue.ValueType.object);
-            root.addChild(stateId, state);
-        }
+        JsonValue root = dataHandle.exists() ? reader.parse(dataHandle) : new JsonValue(JsonValue.ValueType.object);
 
-        JsonValue countyJson = state.get(county);
-        if (countyJson == null) {
-            countyJson = new JsonValue(JsonValue.ValueType.object);
-            state.addChild(county, countyJson);
-        }
+        if (root.has(county)) root.remove(county);
+        JsonValue countyJson = new JsonValue(JsonValue.ValueType.object);
+        root.addChild(county, countyJson);
 
         countyJson.addChild("color", new JsonValue(coloringGrid.getColor().getSerializedName()));
 
@@ -280,13 +271,11 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private ColoringGrid load() {
-        FileHandle dataHandle = Gdx.files.local("data.json");
+        FileHandle dataHandle = Gdx.files.local("data/" + StateRenderer.getStateFromId(stateId) + ".json");
         if (!dataHandle.exists()) throw new IllegalStateException("No saved data for county");
         JsonReader reader = new JsonReader();
         JsonValue root = reader.parse(dataHandle);
-        JsonValue state = root.get(stateId);
-        if (state == null) throw new IllegalStateException("No saved data for county");
-        JsonValue countyJson = state.get(county);
+        JsonValue countyJson = root.get(county);
         if (countyJson == null) throw new IllegalStateException("No saved data for county");
         if (countyJson.getBoolean("complete", false))
             throw new IllegalStateException("Tried to load an already completed county");
