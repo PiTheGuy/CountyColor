@@ -2,6 +2,8 @@ package pitheguy.countycolor.gui;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import pitheguy.countycolor.CountyColor;
@@ -9,12 +11,16 @@ import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.CountryRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
 import pitheguy.countycolor.render.util.RenderConst;
+import pitheguy.countycolor.util.SharedConstants;
+import pitheguy.countycolor.util.Util;
 
 public class CountryScreen implements Screen, InputProcessor {
     private final CountyColor game;
     private final OrthographicCamera camera;
     private final CountryRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
+    private final BitmapFont font = new BitmapFont();
+    private final SpriteBatch batch = new SpriteBatch();
 
     public CountryScreen(CountyColor game) {
         this.game = game;
@@ -29,6 +35,8 @@ public class CountryScreen implements Screen, InputProcessor {
     @Override
     public void dispose() {
         renderer.dispose();
+        font.dispose();
+        batch.dispose();
     }
 
     @Override

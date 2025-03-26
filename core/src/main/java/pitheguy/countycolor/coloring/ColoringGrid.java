@@ -2,6 +2,7 @@ package pitheguy.countycolor.coloring;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.Util;
@@ -74,6 +75,28 @@ public class ColoringGrid {
     public void set(int x, int y) {
         pixmap.drawPixel(x, RenderConst.COLORING_SIZE - y);
         bitSet.set(y * RenderConst.COLORING_SIZE + x);
+    }
+
+    public void applyBrush(Vector2 pos, float brushSize) {
+        int effectiveBrushSize = (int) (brushSize * RenderConst.COLORING_RESOLUTION);
+        int centerX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + RenderConst.COLORING_SIZE / 2f);
+        int centerY = (int) (pos.y * RenderConst.COLORING_RESOLUTION + RenderConst.COLORING_SIZE / 2f);
+        pixmap.fillCircle(centerX, RenderConst.COLORING_SIZE - centerY, effectiveBrushSize);
+        int startX = (int) (pos.x * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
+        int startY = (int) (pos.y * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
+        int endX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + effectiveBrushSize);
+        int endY = (int) (pos.y * RenderConst.COLORING_RESOLUTION + effectiveBrushSize);
+        for (int x = startX; x < endX; x++) {
+            for (int y = startY; y < endY; y++) {
+                float dx = pos.x * RenderConst.COLORING_RESOLUTION - x;
+                float dy = pos.y * RenderConst.COLORING_RESOLUTION - y;
+                if (dx * dx + dy * dy < effectiveBrushSize * effectiveBrushSize) {
+                    int indexX = x + RenderConst.COLORING_SIZE / 2;
+                    int indexY = y + RenderConst.COLORING_SIZE / 2;
+                    bitSet.set(indexY * RenderConst.COLORING_SIZE + indexX);
+                }
+            }
+        }
     }
 
     public boolean get(int x, int y) {

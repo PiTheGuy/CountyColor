@@ -30,4 +30,13 @@ public class Util {
             throw new RuntimeException("Failed to decompress data", e);
         }
     }
+
+    public static String getMemoryUsageString() {
+        long totalMemory = Runtime.getRuntime().totalMemory();
+        long usedMemory = totalMemory - Runtime.getRuntime().freeMemory();
+        long totalMemoryMB = totalMemory / (1024 * 1024);
+        long usedMemoryMB = usedMemory / (1024 * 1024);
+        float percent = (float) usedMemory / totalMemory * 100;
+        return String.format("Memory: %d MB / %d MB (%.2f%%)", usedMemoryMB, totalMemoryMB, percent);
+    }
 }

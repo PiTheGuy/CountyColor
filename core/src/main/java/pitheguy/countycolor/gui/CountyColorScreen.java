@@ -21,11 +21,10 @@ import pitheguy.countycolor.render.util.CameraTransitionHelper;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.Util;
 
-import java.io.StringWriter;
 import java.util.Base64;
 
 public class CountyColorScreen implements Screen, InputProcessor {
-    private static final float COMPLETION_PERCENTAGE = 0.99f;
+    private static final float COMPLETION_PERCENTAGE = 0.995f;
     private final Game game;
     private final String county;
     private final String stateId;
@@ -116,7 +115,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
             timeSinceSave = 0;
         }
         if (getCompletion() == 1) {
-            save();
+            saveAsync();
             inTransition = true;
             transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, stateId, coloringGrid.getColor()));
         }
@@ -193,26 +192,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         Vector2 delta = endPos.cpy().sub(currentPos).scl(1f / steps);
         for (int i = 0; i < steps; i++) {
             currentPos.add(delta);
-            if (canColor(currentPos)) applyBrush0(currentPos);
-        }
-    }
-
-    private void applyBrush0(Vector2 pos) {
-        int effectiveBrushSize = (int) (brushSize * RenderConst.COLORING_RESOLUTION);
-        int startX = (int) (pos.x * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
-        int startY = (int) (pos.y * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
-        int endX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + effectiveBrushSize);
-        int endY = (int) (pos.y * RenderConst.COLORING_RESOLUTION + effectiveBrushSize);
-        for (int x = startX; x < endX; x++) {
-            for (int y = startY; y < endY; y++) {
-                float dx = pos.x * RenderConst.COLORING_RESOLUTION - x;
-                float dy = pos.y * RenderConst.COLORING_RESOLUTION - y;
-                if (dx * dx + dy * dy < effectiveBrushSize * effectiveBrushSize) {
-                    int indexX = x + RenderConst.COLORING_SIZE / 2;
-                    int indexY = y + RenderConst.COLORING_SIZE / 2;
-                    coloringGrid.set(indexX, indexY);
-                }
-            }
+            if (canColor(currentPos)) coloringGrid.applyBrush(currentPos, brushSize);
         }
     }
 
@@ -238,6 +218,8 @@ public class CountyColorScreen implements Screen, InputProcessor {
         double percent = getCompletion() * 100;
         return String.format("Progress: %d / %d (%.2f%%)", Math.min(coloringGrid.coloredPoints(), totalPixels), totalPixels, percent);
     }
+
+
 
     private double getCompletion() {
         return Math.min((double) coloringGrid.coloredPoints() / totalPixels, 1);

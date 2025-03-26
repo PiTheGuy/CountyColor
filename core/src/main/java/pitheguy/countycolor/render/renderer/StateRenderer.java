@@ -1,5 +1,6 @@
 package pitheguy.countycolor.render.renderer;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -37,7 +38,10 @@ public class StateRenderer {
         shapeRenderer.setColor(Color.WHITE);
         shapeRenderer.rect(-RenderConst.RENDER_SIZE, -RenderConst.RENDER_SIZE, RenderConst.RENDER_SIZE * 2, RenderConst.RENDER_SIZE * 2); // White background
         shapeRenderer.end();
-
+        ShapeRenderer lineRenderer = new ShapeRenderer();
+        lineRenderer.setProjectionMatrix(camera.combined);
+        lineRenderer.setColor(Color.BLACK);
+        lineRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         for (String county : shapes.keySet()) {
             PolygonCollection countyPolygons = shapes.get(county);
@@ -47,13 +51,27 @@ public class StateRenderer {
                     RenderUtil.renderFilledPolygon(shapeRenderer, points, getTriangles(points), 1);
             }
             shapeRenderer.setColor(Color.BLACK);
-            for (List<Vector2> points : countyPolygons.getPolygons()) {
-                List<Vector2> pointsCopy = new ArrayList<>(points);
-                pointsCopy.replaceAll(Vector2::cpy);
-                RenderUtil.drawThickPolyline(shapeRenderer, pointsCopy, RenderConst.OUTLINE_THICKNESS * camera.zoom, RenderConst.RENDER_SIZE);
+            if (Gdx.app.getType() == Application.ApplicationType.Desktop) {
+                for (List<Vector2> points : countyPolygons.getPolygons()) {
+                    List<Vector2> pointsCopy = new ArrayList<>(points);
+                    pointsCopy.replaceAll(Vector2::cpy);
+                    RenderUtil.drawThickPolyline(shapeRenderer, pointsCopy, RenderConst.OUTLINE_THICKNESS * camera.zoom, RenderConst.RENDER_SIZE);
+                }
+            } else renderMobile(lineRenderer, countyPolygons);
+        }
+        lineRenderer.end();
+        lineRenderer.dispose();
+        shapeRenderer.end();
+    }
+
+    private void renderMobile(ShapeRenderer lineRenderer, PolygonCollection countyPolygons) {
+        for (List<Vector2> points : countyPolygons.getPolygons()) {
+            for (int i = 0; i < points.size() - 1; i++) {
+                Vector2 point = points.get(i).cpy().scl(RenderConst.RENDER_SIZE / 2f);
+                Vector2 endPoint = points.get(i + 1).cpy().scl(RenderConst.RENDER_SIZE / 2f);
+                lineRenderer.line(point.x, point.y, endPoint.x, endPoint.y);
             }
         }
-        shapeRenderer.end();
     }
 
     private ShortArray getTriangles(List<Vector2> points) {
@@ -110,9 +128,7 @@ public class StateRenderer {
                     case "Polygon" -> List.of(coordinates);
                     case "MultiPolygon" -> {
                         List<JsonValue> polys = new ArrayList<>();
-                        for (JsonValue polygon : coordinates) {
-                            polys.add(polygon);
-                        }
+                        for (JsonValue polygon : coordinates) polys.add(polygon);
                         yield polys;
                     }
                     default -> throw new IllegalStateException("Unexpected type: " + type);

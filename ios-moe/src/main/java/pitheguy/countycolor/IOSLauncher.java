@@ -4,7 +4,7 @@ import apple.uikit.c.UIKit;
 import com.badlogic.gdx.backends.iosmoe.IOSApplication;
 import com.badlogic.gdx.backends.iosmoe.IOSApplicationConfiguration;
 import org.moe.natj.general.Pointer;
-import pitheguy.countycolor.Main;
+import pitheguy.countycolor.CountyColor;
 
 /** Launches the iOS (Multi-Os Engine) application. */
 public class IOSLauncher extends IOSApplication.Delegate {
@@ -15,7 +15,7 @@ public class IOSLauncher extends IOSApplication.Delegate {
     @Override
     protected IOSApplication createApplication() {
         IOSApplicationConfiguration configuration = new IOSApplicationConfiguration();
-        return new IOSApplication(new Main(), configuration);
+        return new IOSApplication(new CountyColor(), configuration);
     }
 
     public static void main(String[] argv) {

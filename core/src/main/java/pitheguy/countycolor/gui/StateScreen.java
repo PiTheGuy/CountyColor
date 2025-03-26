@@ -18,6 +18,7 @@ import pitheguy.countycolor.render.util.RenderConst;
 
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.*;
 
 public class StateScreen implements Screen, InputProcessor {
     private final Game game;
@@ -25,7 +26,8 @@ public class StateScreen implements Screen, InputProcessor {
     private final OrthographicCamera camera;
     private final StateRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
-    private final CountyData countyData;
+    private CountyData countyData;
+    private final Future<CountyData> countyDataFuture;
     private final Stage stage;
     private boolean pendingColorSelection;
     private String pendingCounty;
@@ -38,7 +40,7 @@ public class StateScreen implements Screen, InputProcessor {
         camera.update();
         renderer = new StateRenderer(state);
         transitionHelper = new CameraTransitionHelper(game, camera);
-        countyData = loadCountyData();
+        countyDataFuture = loadCountyData();
         stage = new Stage();
         Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
     }
@@ -51,6 +53,7 @@ public class StateScreen implements Screen, InputProcessor {
 
     @Override
     public void render(float delta) {
+        ensureLoadingFinished();
         transitionHelper.update(delta);
         renderer.renderState(camera, countyData.completed());
         stage.act(delta);
@@ -112,28 +115,41 @@ public class StateScreen implements Screen, InputProcessor {
         return true;
     }
 
-    private CountyData loadCountyData() {
-        FileHandle dataHandle = Gdx.files.local("data.json");
-        if (!dataHandle.exists()) return CountyData.EMPTY;
+    private Future<CountyData> loadCountyData() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        return executor.submit(() -> {
+            FileHandle dataHandle = Gdx.files.local("data.json");
+            if (!dataHandle.exists()) return CountyData.EMPTY;
 
-        JsonReader reader = new JsonReader();
-        JsonValue root = reader.parse(dataHandle);
-        String stateId = StateRenderer.getIdForState(state);
-        JsonValue state = root.get(stateId);
-        if (state == null) return CountyData.EMPTY;
+            JsonReader reader = new JsonReader();
+            JsonValue root = reader.parse(dataHandle);
+            String stateId = StateRenderer.getIdForState(state);
+            JsonValue state = root.get(stateId);
+            if (state == null) return CountyData.EMPTY;
 
-        Map<String, MapColor> completed = new HashMap<>();
-        List<String> started = new ArrayList<>();
+            Map<String, MapColor> completed = new HashMap<>();
+            List<String> started = new ArrayList<>();
 
-        for (JsonValue county = state.child; county != null; county = county.next) {
-            String countyName = county.name;
-            if (county.getBoolean("complete", false)) {
-                String colorName = county.getString("color");
-                completed.put(countyName, MapColor.fromSerializedName(colorName));
-            } else started.add(countyName);
+            for (JsonValue county = state.child; county != null; county = county.next) {
+                String countyName = county.name;
+                if (county.getBoolean("complete", false)) {
+                    String colorName = county.getString("color");
+                    completed.put(countyName, MapColor.fromSerializedName(colorName));
+                } else started.add(countyName);
+            }
+
+            return new CountyData(completed, started);
+        });
+    }
+
+    private void ensureLoadingFinished() {
+        if (countyData == null) {
+            try {
+                countyData = countyDataFuture.get();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
-
-        return new CountyData(completed, started);
     }
 
     @Override
