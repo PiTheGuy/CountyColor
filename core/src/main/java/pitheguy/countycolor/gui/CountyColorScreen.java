@@ -22,9 +22,10 @@ import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.Util;
 
 import java.util.Base64;
+import java.util.concurrent.*;
 
 public class CountyColorScreen implements Screen, InputProcessor {
-    private static final float COMPLETION_PERCENTAGE = 0.995f;
+    private static final float PIXEL_COUNT_MULTIPLIER = 1f;
     private final Game game;
     private final String county;
     private final String stateId;
@@ -43,7 +44,8 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private boolean coloring = false;
     private float maxZoom;
     private float brushSize = 5;
-    private final ColoringGrid coloringGrid;
+    private ColoringGrid coloringGrid;
+    private Future<ColoringGrid> coloringGridFuture;
     private int totalPixels = -1;
     private float timeSinceSave = 0f;
     private boolean inTransition = false;
@@ -60,7 +62,10 @@ public class CountyColorScreen implements Screen, InputProcessor {
         camera.update();
         transitionHelper = new CameraTransitionHelper(game, camera);
         if (load) Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
-        coloringGrid = load ? load() : new ColoringGrid();
+        if (load) {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            coloringGridFuture = executor.submit(this::load);
+        } else coloringGrid = new ColoringGrid();
         countyRenderer = new CountyRenderer(county, stateId);
         initStage();
     }
@@ -88,7 +93,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     @Override
     public void render(float delta) {
         if (totalPixels == -1)
-            totalPixels = (int) (countyRenderer.computeTotalGridSquares() * COMPLETION_PERCENTAGE);
+            totalPixels = (int) (countyRenderer.computeTotalGridSquares() * PIXEL_COUNT_MULTIPLIER);
         camera.update();
         transitionHelper.update(delta);
         Gdx.gl.glClearColor(1, 1, 1, 1);
@@ -306,7 +311,9 @@ public class CountyColorScreen implements Screen, InputProcessor {
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public void show() {}
+    @Override public void show() {
+        if (coloringGridFuture != null) coloringGrid = Util.getFutureValue(coloringGridFuture);
+    }
     @Override public void hide() {}
     @Override public boolean keyDown(int keycode) { return false; }
     @Override public boolean keyUp(int keycode) { return false; }

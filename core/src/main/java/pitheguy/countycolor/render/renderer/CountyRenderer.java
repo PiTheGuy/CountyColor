@@ -1,5 +1,8 @@
 package pitheguy.countycolor.render.renderer;
 
+import clipper2.Clipper;
+import clipper2.core.*;
+import clipper2.offset.*;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
@@ -8,9 +11,12 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.*;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.util.RenderUtil;
+import pitheguy.countycolor.util.DebugFlags;
 
+import java.awt.*;
 import java.util.*;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.*;
 
 import static pitheguy.countycolor.render.util.RenderConst.*;
@@ -29,6 +35,13 @@ public class CountyRenderer {
         ensureLoadingFinished();
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        if (DebugFlags.SHOW_COLORING_AREA) {
+            shapeRenderer.setColor(Color.RED);
+            for (List<Vector2> points : shapes) {
+                List<List<Vector2>> shrunk = shrinkPolygon(points);
+                for (List<Vector2> shape : shrunk) RenderUtil.renderFilledPolygon(shapeRenderer, shape, 1);
+            }
+        }
         shapeRenderer.setColor(Color.BLACK);
         for (List<Vector2> points : shapes) {
             List<Vector2> pointsCopy = new ArrayList<>(points);
@@ -168,7 +181,8 @@ public class CountyRenderer {
         for (List<Vector2> poly : shapes) {
             List<Vector2> scaled = new ArrayList<>();
             for (Vector2 p : poly) scaled.add(new Vector2(p).scl(RENDER_SIZE / 2f));
-            scaledPolygons.add(scaled);
+            List<List<Vector2>> shrunk = shrinkPolygon(scaled);
+            scaledPolygons.addAll(shrunk);
         }
         for (int gridY = 0; gridY < coloringSize; gridY++) {
             float worldY = ((float) gridY + 0.5f - halfGridSize) / COLORING_RESOLUTION;
@@ -203,6 +217,25 @@ public class CountyRenderer {
             }
         }
         return total;
+    }
+
+    private List<List<Vector2>> shrinkPolygon(List<Vector2> polygon) {
+        Path64 path = new Path64();
+        float scale = 1e6f;
+        float amount = OUTLINE_THICKNESS / (2f);
+        for (Vector2 p : polygon) path.add(new Point64(p.x * scale, p.y * scale));
+        ClipperOffset offset = new ClipperOffset();
+        offset.AddPath(path, JoinType.Square, EndType.Polygon);
+        Paths64 solution = new Paths64();
+        offset.Execute(-amount * scale / (RENDER_SIZE / 2f), solution);
+        List<List<Vector2>> result = new ArrayList<>();
+        for (Path64 p : solution) {
+            List<Vector2> shape = new ArrayList<>();
+            for (Point64 point : p)
+                shape.add(new Vector2(point.x / scale, point.y / scale));
+            result.add(shape);
+        }
+        return result;
     }
 
     private List<Interval> mergeIntervals(List<Interval> intervals) {

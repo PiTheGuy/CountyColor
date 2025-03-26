@@ -26,6 +26,7 @@ public class StateScreen implements Screen, InputProcessor {
     private final OrthographicCamera camera;
     private final StateRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
+    private final Skin skin = new Skin(Gdx.files.internal("skin.json"));
     private CountyData countyData;
     private final Future<CountyData> countyDataFuture;
     private final Stage stage;
@@ -42,6 +43,7 @@ public class StateScreen implements Screen, InputProcessor {
         transitionHelper = new CameraTransitionHelper(game, camera);
         countyDataFuture = loadCountyData();
         stage = new Stage();
+        resetStage();
         Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
@@ -49,6 +51,7 @@ public class StateScreen implements Screen, InputProcessor {
     public void dispose() {
         renderer.dispose();
         stage.dispose();
+        skin.dispose();
     }
 
     @Override
@@ -64,10 +67,33 @@ public class StateScreen implements Screen, InputProcessor {
         }
     }
 
+    private void resetStage() {
+        stage.clear();
+        TextButton button = new TextButton("Back", skin);
+        button.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+               goBack();
+            }
+        });
+        button.setPosition(0, Gdx.graphics.getHeight() - button.getHeight());
+        stage.addActor(button);
+    }
+
+    private void goBack() {
+        if (pendingCounty == null) game.setScreen(new CountryScreen(game));
+        else {
+            float targetZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            resetStage();
+            pendingCounty = null;
+            transitionHelper.stopTransition();
+            transitionHelper.transition(new Vector2(0, 0), targetZoom, null);
+        }
+    }
+
     private void showColorSelection() {
         CountyColorScreen nextScreen = new CountyColorScreen(game, pendingCounty, StateRenderer.getIdForState(state), false);
-        stage.clear();
-        Skin skin = new Skin(Gdx.files.internal("skin.json"));
+        resetStage();
         Group group = new Group();
         Label label = new Label("Choose a color", skin);
         label.setPosition(100 - label.getWidth() / 2, 50);
@@ -104,6 +130,7 @@ public class StateScreen implements Screen, InputProcessor {
         String selectedCounty = renderer.getCountyAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
         if (selectedCounty.isEmpty() || countyData.completed().containsKey(selectedCounty)) return false;
         Zoom zoom = renderer.getTargetZoom(selectedCounty);
+        resetStage();
         if (countyData.started().contains(selectedCounty)) {
             CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty, StateRenderer.getIdForState(state), true);
             transitionHelper.transition(zoom.center(), zoom.zoom(), targetScreen);

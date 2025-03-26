@@ -64,6 +64,10 @@ public class RenderUtil {
         return triangulator.computeTriangles(vertices);
     }
 
+    public static void renderFilledPolygon(ShapeRenderer renderer, List<Vector2> points, float scale) {
+        renderFilledPolygon(renderer, points, triangulate(points), scale);
+    }
+
     public static void renderFilledPolygon(ShapeRenderer renderer, List<Vector2> points, ShortArray triangles, float scale) {
         float[] vertices = new float[points.size() * 2];
         for (int i = 0; i < points.size(); i++) {

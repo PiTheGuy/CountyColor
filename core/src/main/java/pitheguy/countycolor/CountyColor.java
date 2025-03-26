@@ -4,7 +4,7 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import pitheguy.countycolor.gui.CountryScreen;
-import pitheguy.countycolor.util.SharedConstants;
+import pitheguy.countycolor.util.DebugFlags;
 import pitheguy.countycolor.util.Util;
 
 public class CountyColor extends Game {
@@ -21,7 +21,7 @@ public class CountyColor extends Game {
     @Override
     public void render() {
         super.render();
-        if (SharedConstants.SHOW_MEMORY) {
+        if (DebugFlags.SHOW_MEMORY) {
             batch.begin();
             font.draw(batch, Util.getMemoryUsageString(), 10, 20);
             batch.end();

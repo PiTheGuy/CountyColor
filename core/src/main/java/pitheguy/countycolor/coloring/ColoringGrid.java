@@ -16,16 +16,11 @@ public class ColoringGrid {
     private MapColor color;
 
     public ColoringGrid() {
-        this(RenderConst.COLORING_SIZE, null);
-    }
-
-    private ColoringGrid(int gridSize, MapColor color) {
-        this.color = color;
-        pixmap = new Pixmap(gridSize, gridSize, Pixmap.Format.RGBA8888);
+        this.color = null;
+        pixmap = new Pixmap(RenderConst.COLORING_SIZE, RenderConst.COLORING_SIZE, Pixmap.Format.RGBA8888);
         pixmap.setColor(new Color(0, 0, 0, 0));
         pixmap.fill();
-        if (color != null) pixmap.setColor(color.getColor());
-        bitSet = new BitSet(gridSize * gridSize);
+        bitSet = new BitSet(RenderConst.COLORING_SIZE * RenderConst.COLORING_SIZE);
     }
 
     private ColoringGrid(Pixmap pixmap, BitSet bitSet, MapColor color) {
@@ -46,9 +41,8 @@ public class ColoringGrid {
         pixmap.fill();
 
         pixmap.setColor(color.getColor());
-        for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i + 1)) {
+        for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i + 1))
             pixmap.drawPixel(i % RenderConst.COLORING_SIZE, RenderConst.COLORING_SIZE - i / RenderConst.COLORING_SIZE);
-        }
 
         return new ColoringGrid(pixmap, bitSet, color);
     }

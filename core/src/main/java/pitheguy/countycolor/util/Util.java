@@ -1,6 +1,8 @@
 package pitheguy.countycolor.util;
 
 import java.io.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -38,5 +40,13 @@ public class Util {
         long usedMemoryMB = usedMemory / (1024 * 1024);
         float percent = (float) usedMemory / totalMemory * 100;
         return String.format("Memory: %d MB / %d MB (%.2f%%)", usedMemoryMB, totalMemoryMB, percent);
+    }
+
+    public static <T> T getFutureValue(Future<T> future) {
+        try {
+            return future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

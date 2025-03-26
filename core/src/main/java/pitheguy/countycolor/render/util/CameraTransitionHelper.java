@@ -47,4 +47,9 @@ public class CameraTransitionHelper {
     public boolean isInTransition() {
         return targetPos != null;
     }
+
+    public void stopTransition() {
+        targetPos = null;
+        targetScreen = null;
+    }
 }
