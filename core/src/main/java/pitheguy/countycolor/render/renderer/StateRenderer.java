@@ -53,9 +53,7 @@ public class StateRenderer {
             shapeRenderer.setColor(Color.BLACK);
             if (Gdx.app.getType() == Application.ApplicationType.Desktop) {
                 for (List<Vector2> points : countyPolygons.getPolygons()) {
-                    List<Vector2> pointsCopy = new ArrayList<>(points);
-                    pointsCopy.replaceAll(Vector2::cpy);
-                    RenderUtil.drawThickPolyline(shapeRenderer, pointsCopy, RenderConst.OUTLINE_THICKNESS * camera.zoom, RenderConst.RENDER_SIZE);
+                    RenderUtil.drawThickPolyline(shapeRenderer, points, RenderConst.OUTLINE_THICKNESS * camera.zoom, RenderConst.RENDER_SIZE);
                 }
             } else renderMobile(lineRenderer, countyPolygons);
         }
