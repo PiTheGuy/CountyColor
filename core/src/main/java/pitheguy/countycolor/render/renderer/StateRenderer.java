@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.*;
+import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.Zoom;
@@ -31,7 +32,7 @@ public class StateRenderer {
         this.shapesFuture = loadState(state);
     }
 
-    public void renderState(OrthographicCamera camera, Map<String, MapColor> completedCounties) {
+    public void renderState(OrthographicCamera camera, CountyData countyData) {
         ensureLoadingFinished();
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -45,8 +46,8 @@ public class StateRenderer {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         for (String county : shapes.keySet()) {
             PolygonCollection countyPolygons = shapes.get(county);
-            if (completedCounties.containsKey(county)) {
-                shapeRenderer.setColor(completedCounties.get(county).getColor());
+            if (countyData.get(county).isCompleted()) {
+                shapeRenderer.setColor(countyData.get(county).mapColor().getColor());
                 for (List<Vector2> points : countyPolygons.getPolygons())
                     RenderUtil.renderFilledPolygon(shapeRenderer, points, getTriangles(points), 1);
             }

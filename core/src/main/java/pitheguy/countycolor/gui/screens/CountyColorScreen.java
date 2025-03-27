@@ -1,4 +1,4 @@
-package pitheguy.countycolor.gui;
+package pitheguy.countycolor.gui.screens;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.files.FileHandle;

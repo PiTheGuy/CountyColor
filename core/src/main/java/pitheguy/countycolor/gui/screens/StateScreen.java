@@ -1,4 +1,4 @@
-package pitheguy.countycolor.gui;
+package pitheguy.countycolor.gui.screens;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.files.FileHandle;
@@ -10,7 +10,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.gui.components.InfoTooltip;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.StateRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
@@ -32,6 +34,7 @@ public class StateScreen implements Screen, InputProcessor {
     private final Stage stage;
     private boolean pendingColorSelection;
     private String pendingCounty;
+    private final InfoTooltip infoTooltip = new InfoTooltip(skin);
 
     public StateScreen(Game game, String state) {
         this.game = game;
@@ -41,7 +44,7 @@ public class StateScreen implements Screen, InputProcessor {
         camera.update();
         renderer = new StateRenderer(state);
         transitionHelper = new CameraTransitionHelper(game, camera);
-        countyDataFuture = loadCountyData();
+        countyDataFuture = CountyData.loadAsync(state);
         stage = new Stage();
         resetStage();
         Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
@@ -58,7 +61,14 @@ public class StateScreen implements Screen, InputProcessor {
     public void render(float delta) {
         ensureLoadingFinished();
         transitionHelper.update(delta);
-        renderer.renderState(camera, countyData.completed());
+        renderer.renderState(camera, countyData);
+        infoTooltip.hide();
+        if (pendingCounty == null) {
+            Vector3 mouseWorld = getMouseWorldCoords();
+            String hoveringCounty = renderer.getCountyAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+            if (!hoveringCounty.isEmpty())
+                infoTooltip.show(stage, hoveringCounty, countyData.get(hoveringCounty).getCompletionString());
+        }
         stage.act(delta);
         stage.draw();
         if (pendingColorSelection && !transitionHelper.isInTransition()) {
@@ -128,10 +138,10 @@ public class StateScreen implements Screen, InputProcessor {
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
         Vector3 mouseWorld = getMouseWorldCoords();
         String selectedCounty = renderer.getCountyAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
-        if (selectedCounty.isEmpty() || countyData.completed().containsKey(selectedCounty)) return false;
+        if (selectedCounty.isEmpty() || countyData.get(selectedCounty).isCompleted()) return false;
         Zoom zoom = renderer.getTargetZoom(selectedCounty);
         resetStage();
-        if (countyData.started().contains(selectedCounty)) {
+        if (countyData.get(selectedCounty).isStarted()) {
             CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty, StateRenderer.getIdForState(state), true);
             transitionHelper.transition(zoom.center(), zoom.zoom(), targetScreen);
         } else {
@@ -140,28 +150,6 @@ public class StateScreen implements Screen, InputProcessor {
             pendingCounty = selectedCounty;
         }
         return true;
-    }
-
-    private Future<CountyData> loadCountyData() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        return executor.submit(() -> {
-            FileHandle dataHandle = Gdx.files.local("data/" + state + ".json");
-            if (!dataHandle.exists()) return CountyData.EMPTY;
-
-            JsonReader reader = new JsonReader();
-            JsonValue root = reader.parse(dataHandle);
-            Map<String, MapColor> completed = new HashMap<>();
-            List<String> started = new ArrayList<>();
-            for (JsonValue county = root.child; county != null; county = county.next) {
-                String countyName = county.name;
-                if (county.getBoolean("complete", false)) {
-                    String colorName = county.getString("color");
-                    completed.put(countyName, MapColor.fromSerializedName(colorName));
-                } else started.add(countyName);
-            }
-
-            return new CountyData(completed, started);
-        });
     }
 
     private void ensureLoadingFinished() {
@@ -195,7 +183,4 @@ public class StateScreen implements Screen, InputProcessor {
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
     @Override public boolean scrolled(float amountX, float amountY) { return false; }
 
-    private record CountyData(Map<String, MapColor> completed, List<String> started) {
-        public static final CountyData EMPTY = new CountyData(Map.of(), List.of());
-    }
 }

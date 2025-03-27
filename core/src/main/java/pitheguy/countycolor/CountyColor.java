@@ -3,7 +3,7 @@ package pitheguy.countycolor;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import pitheguy.countycolor.gui.CountryScreen;
+import pitheguy.countycolor.gui.screens.CountryScreen;
 import pitheguy.countycolor.util.DebugFlags;
 import pitheguy.countycolor.util.Util;
 
