@@ -10,6 +10,7 @@ import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.CountryRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
 import pitheguy.countycolor.render.util.RenderConst;
+import pitheguy.countycolor.util.InputManager;
 
 public class CountryScreen implements Screen, InputProcessor {
     private final Game game;
@@ -26,7 +27,7 @@ public class CountryScreen implements Screen, InputProcessor {
         camera.update();
         renderer = new CountryRenderer();
         transitionHelper = new CameraTransitionHelper(game, camera);
-        Gdx.input.setInputProcessor(this);
+        InputManager.setInputProcessor(this);
     }
 
     @Override

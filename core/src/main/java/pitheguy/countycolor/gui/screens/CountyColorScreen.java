@@ -18,6 +18,7 @@ import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.renderer.*;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
 import pitheguy.countycolor.render.util.RenderConst;
+import pitheguy.countycolor.util.InputManager;
 import pitheguy.countycolor.util.Util;
 
 import java.util.Base64;
@@ -34,6 +35,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private final CountyRenderer countyRenderer;
     private final ColoringRenderer coloringRenderer = new ColoringRenderer();
     private final Stage stage = new Stage();
+    private Slider slider;
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
     private final CameraTransitionHelper transitionHelper;
@@ -48,7 +50,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private int totalPixels = -1;
     private float timeSinceSave = 0f;
     private boolean inTransition = false;
-    private Slider slider;
+    private boolean dirty = false;
 
     public CountyColorScreen(Game game, String county, String stateId, boolean load) {
         this.game = game;
@@ -60,7 +62,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         camera.zoom = maxZoom;
         camera.update();
         transitionHelper = new CameraTransitionHelper(game, camera);
-        if (load) Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
+        if (load) InputManager.setInputProcessor(new InputMultiplexer(stage, this));
         if (load) {
             ExecutorService executor = Executors.newSingleThreadExecutor();
             coloringGridFuture = executor.submit(this::load);
@@ -86,7 +88,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     public void prepare(MapColor color) {
         coloringGrid.setColor(color);
-        Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
+        InputManager.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
     @Override
@@ -109,7 +111,6 @@ public class CountyColorScreen implements Screen, InputProcessor {
         cursorRenderer.end();
         batch.begin();
         font.draw(batch, getProgressString(), 10, Gdx.graphics.getHeight() - 10);
-        font.draw(batch, Gdx.graphics.getFramesPerSecond() + " FPS", Gdx.graphics.getWidth() - 100, Gdx.graphics.getHeight() - 10);
         batch.end();
         stage.act(delta);
         stage.draw();
@@ -196,7 +197,10 @@ public class CountyColorScreen implements Screen, InputProcessor {
         Vector2 delta = endPos.cpy().sub(currentPos).scl(1f / steps);
         for (int i = 0; i < steps; i++) {
             currentPos.add(delta);
-            if (canColor(currentPos)) coloringGrid.applyBrush(currentPos, brushSize);
+            if (canColor(currentPos)) {
+                coloringGrid.applyBrush(currentPos, brushSize);
+                dirty = true;
+            }
         }
     }
 
@@ -245,28 +249,20 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private void save() {
-        if (coloringGrid.coloredPoints() == 0) return;
-
+        if (!dirty) return;
         FileHandle dataHandle = Gdx.files.local("data/" + StateRenderer.getStateFromId(stateId) + ".json");
         JsonReader reader = new JsonReader();
         JsonValue root = dataHandle.exists() ? reader.parse(dataHandle) : new JsonValue(JsonValue.ValueType.object);
-
         if (root.has(county)) root.remove(county);
         JsonValue countyJson = new JsonValue(JsonValue.ValueType.object);
         root.addChild(county, countyJson);
-
         countyJson.addChild("color", new JsonValue(coloringGrid.getColor().getSerializedName()));
-
         if (getCompletion() < 1) {
             byte[] compressed = Util.compress(coloringGrid.asBitSet().toByteArray());
             String encoded = Base64.getEncoder().encodeToString(compressed);
             countyJson.addChild("coloredPoints", new JsonValue(encoded));
-            countyJson.remove("complete");
-        } else {
-            countyJson.remove("coloredPoints");
-            countyJson.addChild("complete", new JsonValue(true));
         }
-
+        countyJson.addChild("completion", new JsonValue(getCompletion()));
         dataHandle.writeString(root.toJson(JsonWriter.OutputType.json), false);
     }
 

@@ -156,13 +156,11 @@ public class CountryRenderer {
 
     public String getStateAtCoords(Vector2 coordinate) {
         for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
-            PolygonCollection county = entry.getValue();
-            if (!county.boundsCheck(coordinate)) continue;
-            for (List<Vector2> polygon : county.getPolygons()) {
-                List<Vector2> copy = new ArrayList<>(polygon);
-                copy.replaceAll(v -> v.cpy().scl(RenderConst.RENDER_SIZE / 2f));
-                if (RenderUtil.pointInPolygon(coordinate, copy)) return entry.getKey();
-            }
+            PolygonCollection state = entry.getValue();
+            if (!state.boundsCheck(coordinate)) continue;
+            for (List<Vector2> polygon : state.getPolygons())
+                if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RenderConst.RENDER_SIZE), polygon))
+                    return entry.getKey();
         }
         return "";
     }

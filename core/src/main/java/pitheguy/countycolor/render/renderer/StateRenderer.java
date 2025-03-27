@@ -211,11 +211,9 @@ public class StateRenderer {
         for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
             PolygonCollection county = entry.getValue();
             if (!county.boundsCheck(coordinate)) continue;
-            for (List<Vector2> polygon : county.getPolygons()) {
-                List<Vector2> copy = new ArrayList<>(polygon);
-                copy.replaceAll(v -> v.cpy().scl(RenderConst.RENDER_SIZE / 2f));
-                if (RenderUtil.pointInPolygon(coordinate, copy)) return entry.getKey();
-            }
+            for (List<Vector2> polygon : county.getPolygons())
+                if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RenderConst.RENDER_SIZE), polygon))
+                    return entry.getKey();
         }
         return "";
     }

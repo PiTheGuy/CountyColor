@@ -101,6 +101,10 @@ public class ColoringGrid {
         return bitSet.cardinality();
     }
 
+    public boolean isEmpty() {
+        return bitSet.isEmpty();
+    }
+
     public void dispose() {
         pixmap.dispose();
     }

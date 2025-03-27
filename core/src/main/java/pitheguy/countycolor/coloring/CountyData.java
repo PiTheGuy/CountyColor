@@ -54,7 +54,7 @@ public class CountyData {
         public String getCompletionString() {
             if (completion == 0) return "Not Started";
             if (completion == 1) return "Completed";
-            return String.format("%.2f%% Complete", completion);
+            return String.format("%.2f%% Complete", completion * 100);
         }
     }
 }

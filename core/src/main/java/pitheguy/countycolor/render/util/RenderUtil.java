@@ -47,7 +47,6 @@ public class RenderUtil {
                 Vector2 prevInner = cross > 0 ? lastV3 : lastV4;
                 renderer.triangle(prevOuter.x, prevOuter.y, p1.x * size / 2, p1.y * size / 2, outer.x, outer.y);
                 renderer.triangle(prevInner.x, prevInner.y, p1.x * size / 2, p1.y * size / 2, inner.x, inner.y);
-                renderer.setColor(Color.BLACK);
             }
             lastV3 = v3;
             lastV4 = v4;

@@ -14,6 +14,7 @@ import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.StateRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
 import pitheguy.countycolor.render.util.RenderConst;
+import pitheguy.countycolor.util.InputManager;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -43,7 +44,7 @@ public class StateScreen implements Screen, InputProcessor {
         countyDataFuture = CountyData.loadAsync(state);
         stage = new Stage();
         resetStage();
-        Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
+        InputManager.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
     @Override

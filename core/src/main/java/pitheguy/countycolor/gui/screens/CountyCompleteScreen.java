@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.render.renderer.StateRenderer;
+import pitheguy.countycolor.util.InputManager;
 
 public class CountyCompleteScreen implements Screen {
     private final Stage stage;
@@ -24,7 +25,7 @@ public class CountyCompleteScreen implements Screen {
         stage = new Stage();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         stateScreen = new StateScreen(game, StateRenderer.getStateFromId(stateId));
-        Gdx.input.setInputProcessor(stage);
+        InputManager.setInputProcessor(stage);
         Skin skin = new Skin(Gdx.files.internal("skin.json"));
         TextButton button = new TextButton("Continue", skin);
         button.setSize(200, 60);
