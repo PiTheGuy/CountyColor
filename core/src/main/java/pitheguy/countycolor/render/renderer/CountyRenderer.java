@@ -1,6 +1,5 @@
 package pitheguy.countycolor.render.renderer;
 
-import clipper2.Clipper;
 import clipper2.core.*;
 import clipper2.offset.*;
 import com.badlogic.gdx.Gdx;
@@ -13,10 +12,8 @@ import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.util.RenderUtil;
 import pitheguy.countycolor.util.DebugFlags;
 
-import java.awt.*;
 import java.util.*;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.*;
 
 import static pitheguy.countycolor.render.util.RenderConst.*;

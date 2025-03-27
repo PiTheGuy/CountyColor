@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.*;
 import pitheguy.countycolor.coloring.CountyData;
-import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.util.RenderConst;

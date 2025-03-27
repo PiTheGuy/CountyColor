@@ -1,6 +1,7 @@
 package pitheguy.countycolor.render.renderer;
 
-import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import pitheguy.countycolor.coloring.ColoringGrid;
 
