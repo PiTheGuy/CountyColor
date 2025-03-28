@@ -10,7 +10,6 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.*;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.util.RenderUtil;
-import pitheguy.countycolor.util.DebugFlags;
 
 import java.util.*;
 import java.util.Collections;
@@ -152,14 +151,8 @@ public class CountyRenderer {
         return point;
     }
 
-    public boolean isCoordinateWithinCounty(Vector2 coordinate, int renderSize) {
-        List<List<Vector2>> shapes = new ArrayList<>(this.shapes);
-        for (int i = 0, shapesSize = shapes.size(); i < shapesSize; i++) {
-            List<Vector2> shapeCopy = new ArrayList<>(shapes.get(i));
-            shapeCopy.replaceAll(point -> point.cpy().scl(renderSize / 2f));
-            shapes.set(i, shapeCopy);
-        }
-        return shapes.stream().anyMatch(polygon -> RenderUtil.pointInPolygon(coordinate, polygon));
+    public boolean isCoordinateWithinCounty(Vector2 coordinate) {
+        return shapes.stream().anyMatch(polygon -> RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RENDER_SIZE), polygon));
     }
 
     public int computeTotalGridSquares() {

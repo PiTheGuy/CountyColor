@@ -211,13 +211,13 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private boolean canColor(Vector2 pos) {
-        int numPoints = brushSize > 30 ? 64 : 32;
+        int numPoints = brushSize > 30 ? 128 : 32;
         for (int i = 0; i < numPoints; i++) {
             float angle = (float)(i * Math.PI * 2 / numPoints); // 0 to 2π
             float dx = brushSize * (float)Math.cos(angle);
             float dy = brushSize * (float)Math.sin(angle);
             Vector2 offsetPoint = new Vector2(pos.x + dx, pos.y + dy);
-            if (!countyRenderer.isCoordinateWithinCounty(offsetPoint, RenderConst.RENDER_SIZE)) return false;
+            if (!countyRenderer.isCoordinateWithinCounty(offsetPoint)) return false;
         }
         return true;
     }
