@@ -84,4 +84,32 @@ public class RenderUtil {
             );
         }
     }
+
+    public static float calculatePerimeter(List<Vector2> points) {
+        float result = 0;
+        for (int i = 0; i < points.size() - 1; i++) {
+            Vector2 p1 = points.get(i);
+            Vector2 p2 = points.get(i + 1);
+            float dx = p2.x - p1.x;
+            float dy = p2.y - p1.y;
+            result += (float) Math.sqrt(dx * dx + dy * dy);
+        }
+        Vector2 p1 = points.get(points.size() - 1);
+        Vector2 p2 = points.get(0);
+        float dx = p2.x - p1.x;
+        float dy = p2.y - p1.y;
+        result += (float) Math.sqrt(dx * dx + dy * dy);
+        return result;
+    }
+
+    public static float calculateArea(List<Vector2> points) {
+        float area = 0f;
+        int n = points.size();
+        for (int i = 0; i < n; i++) {
+            Vector2 current = points.get(i);
+            Vector2 next = points.get((i + 1) % n);  // Wrap around to the first vertex
+            area += current.x * next.y - next.x * current.y;
+        }
+        return Math.abs(area) / 2f;
+    }
 }

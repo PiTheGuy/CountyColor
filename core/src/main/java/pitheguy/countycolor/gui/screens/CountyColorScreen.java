@@ -25,7 +25,6 @@ import java.util.Base64;
 import java.util.concurrent.*;
 
 public class CountyColorScreen implements Screen, InputProcessor {
-    private static final float PIXEL_COUNT_MULTIPLIER = 0.997f;
     private final Game game;
     private final String county;
     private final String state;
@@ -94,7 +93,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     @Override
     public void render(float delta) {
         if (totalPixels == -1)
-            totalPixels = (int) (countyRenderer.computeTotalGridSquares() * PIXEL_COUNT_MULTIPLIER);
+            totalPixels = countyRenderer.computeTotalGridSquares();
         camera.update();
         transitionHelper.update(delta);
         Gdx.gl.glClearColor(1, 1, 1, 1);

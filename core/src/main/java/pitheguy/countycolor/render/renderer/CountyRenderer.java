@@ -164,6 +164,16 @@ public class CountyRenderer {
 
     public int computeTotalGridSquares() {
         ensureLoadingFinished();
+
+        float totalPerimeter = 0;
+        float totalArea = 0;
+        for (List<Vector2> shape : shapes) {
+            totalPerimeter += RenderUtil.calculatePerimeter(shape);
+            totalArea += RenderUtil.calculateArea(shape);
+        }
+        float ratio = totalPerimeter / totalArea;
+        float multiplier = 0.00173616f * ratio + 0.999478f;
+
         int coloringSize = RENDER_SIZE * COLORING_RESOLUTION;
         int halfGridSize = coloringSize / 2;
         int total = 0;
@@ -206,7 +216,7 @@ public class CountyRenderer {
                 }
             }
         }
-        return total;
+        return (int) (total * multiplier);
     }
 
     private List<List<Vector2>> shrinkPolygon(List<Vector2> polygon) {
