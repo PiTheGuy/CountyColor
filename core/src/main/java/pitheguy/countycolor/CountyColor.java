@@ -2,6 +2,7 @@ package pitheguy.countycolor;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import pitheguy.countycolor.gui.screens.CountryScreen;
@@ -38,6 +39,15 @@ public class CountyColor extends Game {
         super.dispose();
         font.dispose();
         batch.dispose();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        super.resize(width, height);
+        OrthographicCamera camera = new OrthographicCamera();
+        camera.setToOrtho(false, width, height);
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
     }
 
     public static CountyColor getInstance() {

@@ -24,21 +24,14 @@ public class CountyRenderer {
     private final List<ShortArray> triangles = new ArrayList<>();
     private List<List<Vector2>> shapes;
 
-    public CountyRenderer(String county, String stateId) {
-        this.shapesFuture = loadCounty(county, stateId);
+    public CountyRenderer(String county, String state) {
+        this.shapesFuture = loadCounty(county, StateRenderer.getIdForState(state));
     }
 
     public void renderCounty(Camera camera) {
         ensureLoadingFinished();
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        if (DebugFlags.SHOW_COLORING_AREA) {
-            shapeRenderer.setColor(Color.RED);
-            for (List<Vector2> points : shapes) {
-                List<List<Vector2>> shrunk = shrinkPolygon(points);
-                for (List<Vector2> shape : shrunk) RenderUtil.renderFilledPolygon(shapeRenderer, shape, 1);
-            }
-        }
         shapeRenderer.setColor(Color.BLACK);
         for (List<Vector2> points : shapes) {
             List<Vector2> pointsCopy = new ArrayList<>(points);
@@ -219,12 +212,12 @@ public class CountyRenderer {
     private List<List<Vector2>> shrinkPolygon(List<Vector2> polygon) {
         Path64 path = new Path64();
         float scale = 1e6f;
-        float amount = OUTLINE_THICKNESS / (2f);
+        float amount = OUTLINE_THICKNESS / 2f;
         for (Vector2 p : polygon) path.add(new Point64(p.x * scale, p.y * scale));
         ClipperOffset offset = new ClipperOffset();
         offset.AddPath(path, JoinType.Square, EndType.Polygon);
         Paths64 solution = new Paths64();
-        offset.Execute(-amount * scale / (RENDER_SIZE / 2f), solution);
+        offset.Execute(-amount * scale, solution);
         List<List<Vector2>> result = new ArrayList<>();
         for (Path64 p : solution) {
             List<Vector2> shape = new ArrayList<>();

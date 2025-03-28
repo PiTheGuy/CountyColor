@@ -25,10 +25,10 @@ import java.util.Base64;
 import java.util.concurrent.*;
 
 public class CountyColorScreen implements Screen, InputProcessor {
-    private static final float PIXEL_COUNT_MULTIPLIER = 1f;
+    private static final float PIXEL_COUNT_MULTIPLIER = 0.997f;
     private final Game game;
     private final String county;
-    private final String stateId;
+    private final String state;
     private final OrthographicCamera camera;
     private final OrthographicCamera hudCamera;
     private final ShapeRenderer cursorRenderer = new ShapeRenderer();
@@ -52,10 +52,10 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private boolean inTransition = false;
     private boolean dirty = false;
 
-    public CountyColorScreen(Game game, String county, String stateId, boolean load) {
+    public CountyColorScreen(Game game, String county, String state, boolean load) {
         this.game = game;
         this.county = county;
-        this.stateId = stateId;
+        this.state = state;
         maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -67,7 +67,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
             ExecutorService executor = Executors.newSingleThreadExecutor();
             coloringGridFuture = executor.submit(this::load);
         } else coloringGrid = new ColoringGrid();
-        countyRenderer = new CountyRenderer(county, stateId);
+        countyRenderer = new CountyRenderer(county, state);
         initStage();
     }
 
@@ -120,9 +120,10 @@ public class CountyColorScreen implements Screen, InputProcessor {
             timeSinceSave = 0;
         }
         if (getCompletion() == 1) {
+            dirty = true; // Mark dirty to force save
             saveAsync();
             inTransition = true;
-            transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, stateId, coloringGrid.getColor()));
+            transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()));
         }
     }
 
@@ -250,7 +251,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     private void save() {
         if (!dirty) return;
-        FileHandle dataHandle = Gdx.files.local("data/" + StateRenderer.getStateFromId(stateId) + ".json");
+        FileHandle dataHandle = Gdx.files.local("data/" + state + ".json");
         JsonReader reader = new JsonReader();
         JsonValue root = dataHandle.exists() ? reader.parse(dataHandle) : new JsonValue(JsonValue.ValueType.object);
         if (root.has(county)) root.remove(county);
@@ -264,10 +265,21 @@ public class CountyColorScreen implements Screen, InputProcessor {
         }
         countyJson.addChild("completion", new JsonValue(getCompletion()));
         dataHandle.writeString(root.toJson(JsonWriter.OutputType.json), false);
+        if (getCompletion() == 1) incrementSavedCompletionCount();
+    }
+
+    private void incrementSavedCompletionCount() {
+        FileHandle handle = Gdx.files.local("data/completion_counts.json");
+        JsonReader reader = new JsonReader();
+        JsonValue root = handle.exists() ? reader.parse(handle) : new JsonValue(JsonValue.ValueType.object);
+        int currentCount = root.getInt(state, 0);
+        if (root.has(state)) root.remove(state);
+        root.addChild(state, new JsonValue(currentCount + 1));
+        handle.writeString(root.toJson(JsonWriter.OutputType.json), false);
     }
 
     private ColoringGrid load() {
-        FileHandle dataHandle = Gdx.files.local("data/" + StateRenderer.getStateFromId(stateId) + ".json");
+        FileHandle dataHandle = Gdx.files.local("data/" + state + ".json");
         if (!dataHandle.exists()) throw new IllegalStateException("No saved data for county");
         JsonReader reader = new JsonReader();
         JsonValue root = reader.parse(dataHandle);

@@ -18,6 +18,9 @@ public class InputManager {
             if (keycode == Input.Keys.F3) {
                 CountyColor.getInstance().toggleDebugStats();
                 return true;
+            } else if (keycode == Input.Keys.F4) {
+                DebugFlags.showColoringArea = !DebugFlags.showColoringArea;
+                return true;
             }
             return false;
         }

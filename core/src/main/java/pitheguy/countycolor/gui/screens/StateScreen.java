@@ -44,7 +44,6 @@ public class StateScreen implements Screen, InputProcessor {
         countyDataFuture = CountyData.loadAsync(state);
         stage = new Stage();
         resetStage();
-        InputManager.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
     @Override
@@ -99,7 +98,7 @@ public class StateScreen implements Screen, InputProcessor {
     }
 
     private void showColorSelection() {
-        CountyColorScreen nextScreen = new CountyColorScreen(game, pendingCounty, StateRenderer.getIdForState(state), false);
+        CountyColorScreen nextScreen = new CountyColorScreen(game, pendingCounty, state, false);
         resetStage();
         Group group = new Group();
         Label label = new Label("Choose a color", skin);
@@ -139,7 +138,7 @@ public class StateScreen implements Screen, InputProcessor {
         Zoom zoom = renderer.getTargetZoom(selectedCounty);
         resetStage();
         if (countyData.get(selectedCounty).isStarted()) {
-            CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty, StateRenderer.getIdForState(state), true);
+            CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty, state, true);
             transitionHelper.transition(zoom.center(), zoom.zoom(), targetScreen);
         } else {
             transitionHelper.transition(zoom.center(), zoom.zoom(), null);
@@ -167,9 +166,13 @@ public class StateScreen implements Screen, InputProcessor {
         camera.update();
     }
 
+    @Override
+    public void show() {
+        InputManager.setInputProcessor(new InputMultiplexer(stage, this));
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public void show() {}
     @Override public void hide() {}
     @Override public boolean keyDown(int keycode) { return false; }
     @Override public boolean keyUp(int keycode) { return false; }

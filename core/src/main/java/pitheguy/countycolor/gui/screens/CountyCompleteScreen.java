@@ -19,12 +19,12 @@ public class CountyCompleteScreen implements Screen {
     private final MapColor color;
     private final StateScreen stateScreen;
 
-    public CountyCompleteScreen(Game game, String county, String stateId, MapColor color) {
+    public CountyCompleteScreen(Game game, String county, String state, MapColor color) {
         this.color = color;
-        countyRenderer = new CountyRenderer(county, stateId);
+        countyRenderer = new CountyRenderer(county, state);
         stage = new Stage();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        stateScreen = new StateScreen(game, StateRenderer.getStateFromId(stateId));
+        stateScreen = new StateScreen(game, state);
         InputManager.setInputProcessor(stage);
         Skin skin = new Skin(Gdx.files.internal("skin.json"));
         TextButton button = new TextButton("Continue", skin);
@@ -40,7 +40,7 @@ public class CountyCompleteScreen implements Screen {
         Label title = new Label("County Complete", skin, "title");
         title.setPosition(Gdx.graphics.getWidth() / 2f - title.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight());
         stage.addActor(title);
-        Label countyName = new Label(county + " County, " + StateRenderer.getStateFromId(stateId), skin);
+        Label countyName = new Label(county + " County, " + state, skin);
         countyName.setPosition(Gdx.graphics.getWidth() / 2f - countyName.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight() - countyName.getHeight());
         stage.addActor(countyName);
     }
