@@ -31,6 +31,7 @@ public class StateScreen implements Screen, InputProcessor {
     private final StateRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
     private final Skin skin = new Skin(Gdx.files.internal("skin.json"));
+    private float maxZoom;
     private CountyData countyData;
     private final Future<CountyData> countyDataFuture;
     private final Stage stage;
@@ -38,16 +39,18 @@ public class StateScreen implements Screen, InputProcessor {
     private String pendingCounty;
     private final InfoTooltip infoTooltip = new InfoTooltip(skin);
     private Texture arrowTexture;
+    private Button backButton;
 
     public StateScreen(Game game, String state) {
         this.game = game;
         this.state = state;
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        camera.zoom = maxZoom;
         camera.update();
         hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        renderer = new StateRenderer(state);
         transitionHelper = new CameraTransitionHelper(game, camera);
+        renderer = new StateRenderer(state, () -> camera.zoom == maxZoom);
         countyDataFuture = CountyData.loadAsync(state);
         Viewport viewport = new ScreenViewport(hudCamera);
         stage = new Stage(viewport);
@@ -84,7 +87,7 @@ public class StateScreen implements Screen, InputProcessor {
 
     private void resetStage() {
         stage.clear();
-        Button backButton = new Button(skin);
+        backButton = new Button(skin);
         arrowTexture = new Texture(Gdx.files.internal("icons/back.png"));
         Image arrowImage = new Image(arrowTexture);
         backButton.add(arrowImage);
@@ -170,11 +173,15 @@ public class StateScreen implements Screen, InputProcessor {
     public void resize(int width, int height) {
         camera.viewportWidth = width;
         camera.viewportHeight = height;
-        camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        camera.zoom = maxZoom;
         camera.update();
         hudCamera.setToOrtho(false, width, height);
         hudCamera.update();
         stage.getViewport().update(width, height, true);
+        renderer.invalidateCache();
+        backButton.setPosition(0, Gdx.graphics.getHeight() - backButton.getHeight());
+        
     }
 
     @Override

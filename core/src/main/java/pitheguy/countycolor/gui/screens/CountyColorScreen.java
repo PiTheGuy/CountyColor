@@ -103,7 +103,6 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     public void prepare(MapColor color) {
         coloringGrid.setColor(color);
-        InputManager.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
     @Override
@@ -338,12 +337,15 @@ public class CountyColorScreen implements Screen, InputProcessor {
         backButton.setPosition(0, Gdx.graphics.getHeight() - backButton.getHeight());
     }
 
+    @Override
+    public void show() {
+        if (coloringGridFuture != null) coloringGrid = Util.getFutureValue(coloringGridFuture);
+        InputManager.setInputProcessor(new InputMultiplexer(stage, this));
+
+    }
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public void show() {
-        if (coloringGridFuture != null) coloringGrid = Util.getFutureValue(coloringGridFuture);
-    }
     @Override public void hide() {}
     @Override public boolean keyDown(int keycode) { return false; }
     @Override public boolean keyUp(int keycode) { return false; }

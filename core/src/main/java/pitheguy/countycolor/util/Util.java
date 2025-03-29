@@ -22,11 +22,7 @@ public class Util {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(compressedData);
              GZIPInputStream gzip = new GZIPInputStream(bis);
              ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = gzip.read(buffer)) != -1) {
-                bos.write(buffer, 0, len);
-            }
+            bos.write(gzip.readAllBytes());
             return bos.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException("Failed to decompress data", e);

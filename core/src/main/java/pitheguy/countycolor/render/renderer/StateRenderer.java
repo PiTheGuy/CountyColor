@@ -2,8 +2,10 @@ package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.*;
@@ -12,9 +14,13 @@ import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.render.util.RenderUtil;
+import pitheguy.countycolor.util.Util;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.BooleanSupplier;
+
+import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class StateRenderer {
     private static final Map<String, String> ID_TO_STATE = new HashMap<>();
@@ -24,19 +30,58 @@ public class StateRenderer {
     }
     private final ShapeRenderer shapeRenderer = new ShapeRenderer();
     private final Future<Map<String, PolygonCollection>> shapesFuture;
+    private final BooleanSupplier useCachedTexture;
     private final Map<List<Vector2>, ShortArray> triangles = new HashMap<>();
+    private final SpriteBatch batch = new SpriteBatch();
     private Map<String, PolygonCollection> shapes = null;
+    private FrameBuffer frameBuffer;
+    private TextureRegion cachedTexture;
 
-    public StateRenderer(String state) {
+
+    public StateRenderer(String state, BooleanSupplier useCachedTexture) {
         this.shapesFuture = loadState(state);
+        this.useCachedTexture = useCachedTexture;
     }
 
     public void renderState(OrthographicCamera camera, CountyData countyData) {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(Color.RED);
+        shapeRenderer.rect(-RENDER_SIZE, -RENDER_SIZE, RENDER_SIZE * 2, RENDER_SIZE * 2);
+        shapeRenderer.end();
+        batch.setProjectionMatrix(camera.combined);
+        if (useCachedTexture()) {
+            if (cachedTexture == null) {
+                frameBuffer = new FrameBuffer(Pixmap.Format.RGBA8888, Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), false);
+                frameBuffer.begin();
+                renderStateInternal(camera, countyData);
+                Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+                Texture texture = new Texture(pixmap);
+                cachedTexture = new TextureRegion(texture);
+                cachedTexture.flip(false, true);
+                frameBuffer.end();
+                pixmap.dispose();
+            }
+            batch.begin();
+            float renderWidth = RENDER_SIZE * ((float) Gdx.graphics.getWidth() / Gdx.graphics.getHeight());
+            batch.draw(cachedTexture, -renderWidth / 2f, -RENDER_SIZE / 2f, renderWidth, RENDER_SIZE);
+            batch.end();
+        } else renderStateInternal(camera, countyData);
+    }
+
+    private boolean useCachedTexture() {
+        return useCachedTexture.getAsBoolean() &&
+               Gdx.graphics.getHeight() >= RENDER_SIZE &&
+               Gdx.graphics.getWidth() >= RENDER_SIZE &&
+               Gdx.graphics.getHeight() <= Gdx.graphics.getWidth();
+    }
+
+    private void renderStateInternal(OrthographicCamera camera, CountyData countyData) {
         ensureLoadingFinished();
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(Color.WHITE);
-        shapeRenderer.rect(-RenderConst.RENDER_SIZE, -RenderConst.RENDER_SIZE, RenderConst.RENDER_SIZE * 2, RenderConst.RENDER_SIZE * 2); // White background
+        shapeRenderer.rect(-RENDER_SIZE, -RENDER_SIZE, RENDER_SIZE * 2, RENDER_SIZE * 2); // White background
         shapeRenderer.end();
         ShapeRenderer lineRenderer = new ShapeRenderer();
         lineRenderer.setProjectionMatrix(camera.combined);
@@ -51,11 +96,10 @@ public class StateRenderer {
                     RenderUtil.renderFilledPolygon(shapeRenderer, points, getTriangles(points), 1);
             }
             shapeRenderer.setColor(Color.BLACK);
-            if (Gdx.app.getType() == Application.ApplicationType.Desktop) {
-                for (List<Vector2> points : countyPolygons.getPolygons()) {
-                    RenderUtil.drawThickPolyline(shapeRenderer, points, RenderConst.OUTLINE_THICKNESS * camera.zoom, RenderConst.RENDER_SIZE);
-                }
-            } else renderMobile(lineRenderer, countyPolygons);
+            if (Gdx.app.getType() == Application.ApplicationType.Desktop)
+                for (List<Vector2> points : countyPolygons.getPolygons())
+                    RenderUtil.drawThickPolyline(shapeRenderer, points, RenderConst.OUTLINE_THICKNESS * camera.zoom, RENDER_SIZE);
+            else renderMobile(lineRenderer, countyPolygons);
         }
         lineRenderer.end();
         lineRenderer.dispose();
@@ -65,11 +109,15 @@ public class StateRenderer {
     private void renderMobile(ShapeRenderer lineRenderer, PolygonCollection countyPolygons) {
         for (List<Vector2> points : countyPolygons.getPolygons()) {
             for (int i = 0; i < points.size() - 1; i++) {
-                Vector2 point = points.get(i).cpy().scl(RenderConst.RENDER_SIZE / 2f);
-                Vector2 endPoint = points.get(i + 1).cpy().scl(RenderConst.RENDER_SIZE / 2f);
-                lineRenderer.line(point.x, point.y, endPoint.x, endPoint.y);
+                Vector2 point = points.get(i);
+                Vector2 endPoint = points.get(i + 1);
+                lineRenderer.line(point.x * RENDER_SIZE / 2f, point.y * RENDER_SIZE / 2f, endPoint.x * RENDER_SIZE / 2f, endPoint.y * RENDER_SIZE / 2);
             }
         }
+    }
+
+    public void invalidateCache() {
+        cachedTexture = null;
     }
 
     private ShortArray getTriangles(List<Vector2> points) {
@@ -77,13 +125,7 @@ public class StateRenderer {
     }
 
     private void ensureLoadingFinished() {
-        if (shapes == null) {
-            try {
-                shapes = shapesFuture.get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        if (shapes == null) shapes = Util.getFutureValue(shapesFuture);
     }
 
     private static void initStateIdMap() {
@@ -212,7 +254,7 @@ public class StateRenderer {
             PolygonCollection county = entry.getValue();
             if (!county.boundsCheck(coordinate)) continue;
             for (List<Vector2> polygon : county.getPolygons())
-                if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RenderConst.RENDER_SIZE), polygon))
+                if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RENDER_SIZE), polygon))
                     return entry.getKey();
         }
         return "";
@@ -226,13 +268,16 @@ public class StateRenderer {
         float maxY = countyPolygons.getMaxY();
         float xRange = (maxX - minX) / 2;
         float yRange = (maxY - minY) / 2;
-        float zoom = Math.max(xRange, yRange) * RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        float xCenter = (minX + maxX) / 4f * RenderConst.RENDER_SIZE;
-        float yCenter = (minY + maxY) / 4f * RenderConst.RENDER_SIZE;
+        float zoom = Math.max(xRange, yRange) * RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        float xCenter = (minX + maxX) / 4f * RENDER_SIZE;
+        float yCenter = (minY + maxY) / 4f * RENDER_SIZE;
         return new Zoom(new Vector2(xCenter, yCenter), zoom);
     }
 
     public void dispose() {
         shapeRenderer.dispose();
+        batch.dispose();
+        if (cachedTexture != null) cachedTexture.getTexture().dispose();
+        if (frameBuffer != null) frameBuffer.dispose();
     }
 }
