@@ -87,7 +87,7 @@ public class StateRenderer {
     }
 
     private static void initStateIdMap() {
-        String[] mappings = Gdx.files.internal("state_ids.txt").readString().split("\n");
+        String[] mappings = Gdx.files.internal("metadata/state_ids.txt").readString().split("\n");
         for (String mapping : mappings) {
             String[] parts = mapping.split("=");
             ID_TO_STATE.put(parts[1], parts[0]);
@@ -107,7 +107,7 @@ public class StateRenderer {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         return executor.submit(() -> {
             JsonReader reader = new JsonReader();
-            JsonValue root = reader.parse(Gdx.files.internal("counties.json"));
+            JsonValue root = reader.parse(Gdx.files.internal("metadata/counties.json"));
             JsonValue array = root.get("features");
 
             Map<String, List<List<Vector2>>> shapes = new HashMap<>();

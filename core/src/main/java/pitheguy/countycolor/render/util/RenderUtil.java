@@ -1,6 +1,7 @@
 package pitheguy.countycolor.render.util;
 
-import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.Vector2;
@@ -111,5 +112,17 @@ public class RenderUtil {
             area += current.x * next.y - next.x * current.y;
         }
         return Math.abs(area) / 2f;
+    }
+
+    public static float getTextWidth(BitmapFont font, String text) {
+        GlyphLayout layout = new GlyphLayout();
+        layout.setText(font, text);
+        return layout.width;
+    }
+
+    public static float getTextHeight(BitmapFont font, String text) {
+        GlyphLayout layout = new GlyphLayout();
+        layout.setText(font, text);
+        return layout.height;
     }
 }

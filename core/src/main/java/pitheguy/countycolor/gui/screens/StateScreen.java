@@ -2,11 +2,14 @@ package pitheguy.countycolor.gui.screens;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.*;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.gui.components.InfoTooltip;
@@ -15,6 +18,7 @@ import pitheguy.countycolor.render.renderer.StateRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.InputManager;
+import pitheguy.countycolor.util.Util;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -23,6 +27,7 @@ public class StateScreen implements Screen, InputProcessor {
     private final Game game;
     private final String state;
     private final OrthographicCamera camera;
+    private final OrthographicCamera hudCamera;
     private final StateRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
     private final Skin skin = new Skin(Gdx.files.internal("skin.json"));
@@ -32,6 +37,7 @@ public class StateScreen implements Screen, InputProcessor {
     private boolean pendingColorSelection;
     private String pendingCounty;
     private final InfoTooltip infoTooltip = new InfoTooltip(skin);
+    private Texture arrowTexture;
 
     public StateScreen(Game game, String state) {
         this.game = game;
@@ -39,10 +45,12 @@ public class StateScreen implements Screen, InputProcessor {
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.update();
+        hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         renderer = new StateRenderer(state);
         transitionHelper = new CameraTransitionHelper(game, camera);
         countyDataFuture = CountyData.loadAsync(state);
-        stage = new Stage();
+        Viewport viewport = new ScreenViewport(hudCamera);
+        stage = new Stage(viewport);
         resetStage();
     }
 
@@ -51,6 +59,7 @@ public class StateScreen implements Screen, InputProcessor {
         renderer.dispose();
         stage.dispose();
         skin.dispose();
+        arrowTexture.dispose();
     }
 
     @Override
@@ -75,15 +84,19 @@ public class StateScreen implements Screen, InputProcessor {
 
     private void resetStage() {
         stage.clear();
-        TextButton button = new TextButton("Back", skin);
-        button.addListener(new ClickListener() {
+        Button backButton = new Button(skin);
+        arrowTexture = new Texture(Gdx.files.internal("icons/back.png"));
+        Image arrowImage = new Image(arrowTexture);
+        backButton.add(arrowImage);
+        backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-               goBack();
+                goBack();
             }
         });
-        button.setPosition(0, Gdx.graphics.getHeight() - button.getHeight());
-        stage.addActor(button);
+        backButton.setSize(40, 40);
+        backButton.setPosition(0, Gdx.graphics.getHeight() - backButton.getHeight());
+        stage.addActor(backButton);
     }
 
     private void goBack() {
@@ -92,6 +105,7 @@ public class StateScreen implements Screen, InputProcessor {
             float targetZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
             resetStage();
             pendingCounty = null;
+            pendingColorSelection = false;
             transitionHelper.stopTransition();
             transitionHelper.transition(new Vector2(0, 0), targetZoom, null);
         }
@@ -149,13 +163,7 @@ public class StateScreen implements Screen, InputProcessor {
     }
 
     private void ensureLoadingFinished() {
-        if (countyData == null) {
-            try {
-                countyData = countyDataFuture.get();
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        if (countyData == null) countyData = Util.getFutureValue(countyDataFuture);
     }
 
     @Override
@@ -164,6 +172,9 @@ public class StateScreen implements Screen, InputProcessor {
         camera.viewportHeight = height;
         camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.update();
+        hudCamera.setToOrtho(false, width, height);
+        hudCamera.update();
+        stage.getViewport().update(width, height, true);
     }
 
     @Override

@@ -71,7 +71,7 @@ public class CountyRenderer {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         return executor.submit(() -> {
             JsonReader reader = new JsonReader();
-            JsonValue root = reader.parse(Gdx.files.internal("counties.json"));
+            JsonValue root = reader.parse(Gdx.files.internal("metadata/counties.json"));
             JsonValue array = root.get("features");
             for (JsonValue country : array) {
                 JsonValue properties = country.get("properties");

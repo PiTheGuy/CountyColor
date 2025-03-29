@@ -11,6 +11,8 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import pitheguy.countycolor.gui.components.InfoTooltip;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.CountryRenderer;
@@ -27,11 +29,12 @@ import java.util.concurrent.*;
 public class CountryScreen implements Screen, InputProcessor {
     private final Game game;
     private final OrthographicCamera camera;
+    private final OrthographicCamera hudCamera;
     private final CountryRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
-    private final Stage stage = new Stage();
+    private final Stage stage;
     private final InfoTooltip tooltip = new InfoTooltip(new Skin(Gdx.files.internal("skin.json")));
     private final Future<Map<String, Integer>> completionCounts = loadCompletionCounts();
     private static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
@@ -44,8 +47,11 @@ public class CountryScreen implements Screen, InputProcessor {
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
         camera.update();
+        hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         renderer = new CountryRenderer();
         transitionHelper = new CameraTransitionHelper(game, camera);
+        Viewport viewport = new ScreenViewport(hudCamera);
+        stage = new Stage(viewport);
         InputManager.setInputProcessor(this);
     }
 
@@ -97,10 +103,13 @@ public class CountryScreen implements Screen, InputProcessor {
         camera.viewportHeight = height;
         camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
         camera.update();
+        hudCamera.setToOrtho(false, width, height);
+        hudCamera.update();
+        stage.getViewport().update(width, height, true);
     }
 
     private static void loadCountyCounts() {
-        String[] mappings = Gdx.files.internal("county_counts.txt").readString().split("\n");
+        String[] mappings = Gdx.files.internal("metadata/county_counts.txt").readString().split("\n");
         for (String mapping : mappings) {
             String[] parts = mapping.split("=");
             COUNTY_COUNTS.put(parts[0], Integer.parseInt(parts[1]));

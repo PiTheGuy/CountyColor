@@ -58,8 +58,8 @@
 },
 "ButtonStyle": {
 	"default": {
-		"up": "round-gray",
-		"down": "round-dark-gray",
+		"up": "round-white",
+		"down": "round-gray",
 		"over": "round-light-gray"
 	},
 	"toggle": {
@@ -181,8 +181,8 @@
 	"default": {
 		"font": "font",
 		"fontColor": "black",
-		"up": "round-gray",
-		"down": "round-dark-gray",
+		"up": "round-white",
+		"down": "round-gray",
 		"over": "round-light-gray"
 	},
 	"toggle": {

@@ -7,17 +7,16 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.*;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Slider;
+import com.badlogic.gdx.scenes.scene2d.*;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.*;
+import com.badlogic.gdx.utils.viewport.*;
 import pitheguy.countycolor.coloring.ColoringGrid;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.renderer.*;
-import pitheguy.countycolor.render.util.CameraTransitionHelper;
-import pitheguy.countycolor.render.util.RenderConst;
+import pitheguy.countycolor.render.util.*;
 import pitheguy.countycolor.util.InputManager;
 import pitheguy.countycolor.util.Util;
 
@@ -31,9 +30,10 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private final OrthographicCamera camera;
     private final OrthographicCamera hudCamera;
     private final ShapeRenderer cursorRenderer = new ShapeRenderer();
+    private final ShapeRenderer progressBarRenderer = new ShapeRenderer();
     private final CountyRenderer countyRenderer;
     private final ColoringRenderer coloringRenderer = new ColoringRenderer();
-    private final Stage stage = new Stage();
+    private final Stage stage;
     private Slider slider;
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
@@ -50,6 +50,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private float timeSinceSave = 0f;
     private boolean inTransition = false;
     private boolean dirty = false;
+    private Button backButton;
 
     public CountyColorScreen(Game game, String county, String state, boolean load) {
         this.game = game;
@@ -58,6 +59,8 @@ public class CountyColorScreen implements Screen, InputProcessor {
         maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        ScreenViewport viewport = new ScreenViewport(hudCamera);
+        stage = new Stage(viewport);
         camera.zoom = maxZoom;
         camera.update();
         transitionHelper = new CameraTransitionHelper(game, camera);
@@ -83,6 +86,19 @@ public class CountyColorScreen implements Screen, InputProcessor {
             }
         });
         stage.addActor(slider);
+        backButton = new Button(skin);
+        Texture arrowTexture = new Texture(Gdx.files.internal("icons/back.png"));
+        backButton.add(new Image(arrowTexture));
+        backButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                saveAsync();
+                game.setScreen(new StateScreen(game, state));
+            }
+        });
+        backButton.setSize(40, 40);
+        backButton.setPosition(0, Gdx.graphics.getHeight() - backButton.getHeight());
+        stage.addActor(backButton);
     }
 
     public void prepare(MapColor color) {
@@ -108,9 +124,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         cursorRenderer.setColor(canColor() ? coloringGrid.getColor().getColor() : Color.RED);
         cursorRenderer.circle(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY(), brushSize / camera.zoom);
         cursorRenderer.end();
-        batch.begin();
-        font.draw(batch, getProgressString(), 10, Gdx.graphics.getHeight() - 10);
-        batch.end();
+        renderProgressBar();
         stage.act(delta);
         stage.draw();
         timeSinceSave += delta;
@@ -124,6 +138,22 @@ public class CountyColorScreen implements Screen, InputProcessor {
             inTransition = true;
             transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()));
         }
+    }
+
+    private void renderProgressBar() {
+        progressBarRenderer.begin(ShapeRenderer.ShapeType.Line);
+        progressBarRenderer.setColor(Color.BLACK);
+        progressBarRenderer.rect(50, Gdx.graphics.getHeight() - 35, 100, 30);
+        progressBarRenderer.end();
+        progressBarRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        progressBarRenderer.rect(50, Gdx.graphics.getHeight() - 35, getCompletion() * 100, 30);
+        progressBarRenderer.end();
+        batch.begin();
+        String progressString = String.format("%.2f%%", getCompletion() * 100);
+        float textWidth = RenderUtil.getTextWidth(font, progressString);
+        float textHeight = RenderUtil.getTextHeight(font, progressString);
+        font.draw(batch, progressString, 100 - textWidth / 2, Gdx.graphics.getHeight() - 8 - textHeight / 2);
+        batch.end();
     }
 
     @Override
@@ -223,14 +253,14 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private String getProgressString() {
-        double percent = getCompletion() * 100;
+        float percent = getCompletion() * 100;
         return String.format("Progress: %d / %d (%.2f%%)", Math.min(coloringGrid.coloredPoints(), totalPixels), totalPixels, percent);
     }
 
 
 
-    private double getCompletion() {
-        return Math.min((double) coloringGrid.coloredPoints() / totalPixels, 1);
+    private float getCompletion() {
+        return (float) Math.min((double) coloringGrid.coloredPoints() / totalPixels, 1);
     }
 
     @Override
@@ -242,6 +272,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         stage.dispose();
         batch.dispose();
         font.dispose();
+        progressBarRenderer.dispose();
     }
 
     private void saveAsync() {
@@ -300,8 +331,11 @@ public class CountyColorScreen implements Screen, InputProcessor {
         camera.update();
         hudCamera.setToOrtho(false, width, height);
         cursorRenderer.setProjectionMatrix(hudCamera.combined);
+        progressBarRenderer.setProjectionMatrix(hudCamera.combined);
         batch.setProjectionMatrix(hudCamera.combined);
-        initStage();
+        stage.getViewport().update(width, height, true);
+        slider.setPosition(width / 2f - slider.getWidth() / 2f, height - 30);
+        backButton.setPosition(0, Gdx.graphics.getHeight() - backButton.getHeight());
     }
 
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }

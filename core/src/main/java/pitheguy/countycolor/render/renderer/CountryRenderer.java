@@ -56,7 +56,7 @@ public class CountryRenderer {
 
     private Map<String, PolygonCollection> loadShapes() {
         JsonReader reader = new JsonReader();
-        JsonValue root = reader.parse(Gdx.files.internal("states.geojson"));
+        JsonValue root = reader.parse(Gdx.files.internal("metadata/states.geojson"));
         JsonValue array = root.get("features");
 
         Map<String, List<List<Vector2>>> shapes = new HashMap<>();
