@@ -72,15 +72,20 @@ public class CountryRenderer {
             String type = geometry.getString("type");
             JsonValue coordinates = geometry.get("coordinates");
 
-            List<JsonValue> shapesJson = switch (type) {
-                case "Polygon" -> List.of(coordinates);
-                case "MultiPolygon" -> {
+            List<JsonValue> shapesJson;
+            switch (type) {
+                case "Polygon":
+                    shapesJson = new ArrayList<>();
+                    shapesJson.add(coordinates);
+                    break;
+                case "MultiPolygon":
                     List<JsonValue> polys = new ArrayList<>();
                     for (JsonValue polygon : coordinates) polys.add(polygon);
-                    yield polys;
-                }
-                default -> throw new IllegalStateException("Unexpected type: " + type);
-            };
+                    shapesJson = polys;
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected type: " + type);
+            }
 
             List<List<Vector2>> polygons = new ArrayList<>();
             for (JsonValue arr : shapesJson) {

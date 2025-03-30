@@ -141,10 +141,6 @@ public class StateRenderer {
         return STATE_TO_ID.get(state);
     }
 
-    public static String getStateFromId(String id) {
-        return ID_TO_STATE.get(id);
-    }
-
     private Future<Map<String, PolygonCollection>> loadState(String state) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         return executor.submit(() -> {
@@ -164,15 +160,19 @@ public class StateRenderer {
                 String type = geometry.getString("type");
                 JsonValue coordinates = geometry.get("coordinates");
 
-                List<JsonValue> shapesJson = switch (type) {
-                    case "Polygon" -> List.of(coordinates);
-                    case "MultiPolygon" -> {
+                List<JsonValue> shapesJson;
+                switch (type) {
+                    case "Polygon":
+                        shapesJson = List.of(coordinates);
+                        break;
+                    case "MultiPolygon":
                         List<JsonValue> polys = new ArrayList<>();
                         for (JsonValue polygon : coordinates) polys.add(polygon);
-                        yield polys;
-                    }
-                    default -> throw new IllegalStateException("Unexpected type: " + type);
-                };
+                        shapesJson = polys;
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected type: " + type);
+                }
 
                 List<List<Vector2>> polygons = new ArrayList<>();
 

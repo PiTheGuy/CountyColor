@@ -80,17 +80,19 @@ public class CountyRenderer {
                 JsonValue geometry = country.get("geometry");
                 String type = geometry.getString("type");
                 JsonValue coordinates = geometry.get("coordinates");
-                List<JsonValue> shapesJson = switch (type) {
-                    case "Polygon" -> List.of(coordinates);
-                    case "MultiPolygon" -> {
+                List<JsonValue> shapesJson;
+                switch (type) {
+                    case "Polygon":
+                        shapesJson = List.of(coordinates);
+                        break;
+                    case "MultiPolygon":
                         List<JsonValue> polys = new ArrayList<>();
-                        for (JsonValue polygon : coordinates) {
-                            polys.add(polygon);
-                        }
-                        yield polys;
-                    }
-                    default -> throw new IllegalStateException("Unexpected type: " + type);
-                };
+                        for (JsonValue polygon : coordinates) polys.add(polygon);
+                        shapesJson = polys;
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected type: " + type);
+                }
                 List<List<Vector2>> shapes = new ArrayList<>();
                 for (JsonValue arr : shapesJson) {
                     JsonValue outer = arr.get(0); // use only the outer ring
