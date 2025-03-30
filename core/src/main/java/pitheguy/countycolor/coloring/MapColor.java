@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 public enum MapColor {
     GREEN(Color.GREEN),
     CYAN(Color.CYAN),
-    YELLOW(Color.YELLOW),
+    YELLOW(new Color(1, 0.9f, 0, 1)),
     MAGENTA(Color.MAGENTA);
 
     private final Color color;
