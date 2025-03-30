@@ -21,7 +21,6 @@ import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.InputManager;
 import pitheguy.countycolor.util.Util;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -37,7 +36,7 @@ public class CountryScreen implements Screen, InputProcessor {
     private final Stage stage;
     private final InfoTooltip tooltip = new InfoTooltip(new Skin(Gdx.files.internal("skin.json")));
     private final Future<Map<String, Integer>> completionCounts = loadCompletionCounts();
-    private static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
+    public static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
     static {
         loadCountyCounts();
     }
@@ -66,7 +65,7 @@ public class CountryScreen implements Screen, InputProcessor {
     @Override
     public void render(float delta) {
         transitionHelper.update(delta);
-        renderer.renderCountry(camera);
+        renderer.renderCountry(camera, completionCounts);
         tooltip.hide();
         Vector3 mouseWorld = getMouseWorldCoords();
         String selectedState = renderer.getStateAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));

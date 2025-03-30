@@ -5,14 +5,17 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.JsonReader;
-import com.badlogic.gdx.utils.JsonValue;
+import com.badlogic.gdx.utils.*;
+import pitheguy.countycolor.gui.screens.CountryScreen;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.render.util.RenderUtil;
+import pitheguy.countycolor.util.Util;
 
 import java.util.*;
+import java.util.Collections;
+import java.util.concurrent.Future;
 
 public class CountryRenderer {
     private static final List<String> FILTERED_STATES = List.of(
@@ -28,23 +31,39 @@ public class CountryRenderer {
 
     private final ShapeRenderer shapeRenderer = new ShapeRenderer();
     private final Map<String, PolygonCollection> shapes;
+    private final Map<List<Vector2>, ShortArray> triangles = new HashMap<>();
 
     public CountryRenderer() {
         this.shapes = loadShapes();
     }
 
-    public void renderCountry(OrthographicCamera camera) {
+    public void renderCountry(OrthographicCamera camera, Future<Map<String, Integer>> completionCounts) {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(Color.WHITE);
         shapeRenderer.rect(-RenderConst.RENDER_SIZE, -RenderConst.RENDER_SIZE, RenderConst.RENDER_SIZE * 2, RenderConst.RENDER_SIZE * 2); // White background
         shapeRenderer.end();
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        List<String> completedStates = new ArrayList<>();
+        for (String state : shapes.keySet()) {
+            boolean completed = completionCounts.isDone() && Objects.equals(Util.getFutureValue(completionCounts).getOrDefault(state, 0), CountryScreen.COUNTY_COUNTS.get(state));
+            if (completed) completedStates.add(state);
+        }
+        if (!completedStates.isEmpty()) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.GREEN);
+            for (String stateName : completedStates) {
+                PolygonCollection state = shapes.get(stateName);
+                for (List<Vector2> points : state.getPolygons()) {
+                    RenderUtil.renderFilledPolygon(shapeRenderer, points, triangles.computeIfAbsent(points, RenderUtil::triangulate), 1);
+                }
+            }
+            shapeRenderer.end();
+        }
         shapeRenderer.setColor(Color.BLACK);
-        for (String countyName : shapes.keySet()) {
-            PolygonCollection county = shapes.get(countyName);
-            for (List<Vector2> points : county.getPolygons()) {
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        for (String stateName : shapes.keySet()) {
+            PolygonCollection state = shapes.get(stateName);
+            for (List<Vector2> points : state.getPolygons()) {
                 for (int i = 0; i < points.size() - 1; i++) {
                     Vector2 point = points.get(i);
                     Vector2 endPoint = points.get(i + 1);
