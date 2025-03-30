@@ -42,7 +42,8 @@ public class CountryRenderer {
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.BLACK);
-        for (PolygonCollection county : shapes.values()) {
+        for (String countyName : shapes.keySet()) {
+            PolygonCollection county = shapes.get(countyName);
             for (List<Vector2> points : county.getPolygons()) {
                 for (int i = 0; i < points.size() - 1; i++) {
                     Vector2 point = points.get(i);
@@ -59,14 +60,14 @@ public class CountryRenderer {
         JsonValue root = reader.parse(Gdx.files.internal("metadata/states.geojson"));
         JsonValue array = root.get("features");
 
-        Map<String, List<List<Vector2>>> shapes = new HashMap<>();
+        Map<String, PolygonCollection> shapes = new HashMap<>();
+        Map<String, PolygonCollection> renderedSeparately = new HashMap<>();
 
         for (JsonValue country : array) {
             JsonValue properties = country.get("properties");
             String stateName = properties.getString("NAME");
 
             if (FILTERED_STATES.contains(stateName)) continue;
-            if (RENDERED_SEPARATELY.contains(stateName)) continue; // TODO render these separately
 
             JsonValue geometry = country.get("geometry");
             String type = geometry.getString("type");
@@ -98,34 +99,51 @@ public class CountryRenderer {
                 }
                 polygons.add(points);
             }
-
-            shapes.put(stateName, polygons);
+            if (stateName.equals("Alaska")) RenderUtil.fixRollover(polygons);
+            if (RENDERED_SEPARATELY.contains(stateName)) renderedSeparately.put(stateName, new PolygonCollection(polygons));
+            else shapes.put(stateName, new PolygonCollection(polygons));
         }
-        float minX = (float) shapes.values().stream()
-            .flatMap(Collection::stream)
-            .flatMap(Collection::stream)
-            .mapToDouble(v -> v.x)
-            .min()
-            .getAsDouble();
-        float minY = (float) shapes.values().stream()
-            .flatMap(Collection::stream)
-            .flatMap(Collection::stream)
-            .mapToDouble(v -> v.y)
-            .min()
-            .getAsDouble();
-        float maxX = (float) shapes.values().stream()
-            .flatMap(Collection::stream)
-            .flatMap(Collection::stream)
-            .mapToDouble(v -> v.x)
-            .max()
-            .getAsDouble();
-        float maxY = (float) shapes.values().stream()
-            .flatMap(Collection::stream)
-            .flatMap(Collection::stream)
-            .mapToDouble(v -> v.y)
-            .max()
-            .getAsDouble();
+        float minX = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMinX).min().getAsDouble();
+        float minY = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMinY).min().getAsDouble();
+        float maxX = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMaxX).max().getAsDouble();
+        float maxY = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMaxY).max().getAsDouble();
+        Map<String, PolygonCollection> relativeShapes = new HashMap<>();
+        for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
+            List<List<Vector2>> county = new ArrayList<>();
+            for (List<Vector2> points : entry.getValue().getPolygons()) {
+                List<Vector2> relativePoints = new ArrayList<>();
+                for (Vector2 point : points) relativePoints.add(relativize(point, minX, maxX, minY, maxY));
+                county.add(relativePoints);
+            }
+            relativeShapes.put(entry.getKey(), new PolygonCollection(county));
+        }
+        addRenderedSeparately(relativeShapes, renderedSeparately);
+        return relativeShapes;
+    }
 
+    private void addRenderedSeparately(Map<String, PolygonCollection> map, Map<String, PolygonCollection> renderedSeparately) {
+        int i = 0;
+        List<Map.Entry<String, PolygonCollection>> entries = new ArrayList<>(renderedSeparately.entrySet());
+        Collections.reverse(entries);
+        for (Map.Entry<String, PolygonCollection> entry : entries) {
+            float startX = -0.8f + 0.3f * i;
+            PolygonCollection polygons = entry.getValue();
+            List<List<Vector2>> relativeShapes = new ArrayList<>();
+            for (List<Vector2> points : polygons.getPolygons()) {
+                List<Vector2> relativePoints = new ArrayList<>();
+                for (Vector2 point : points) {
+                    Vector2 relativized = relativize(point, polygons.getMinX(), polygons.getMaxX(), polygons.getMinY(), polygons.getMaxY());
+                    relativized.scl(0.25f).add(startX, -0.4f);
+                    relativePoints.add(relativized);
+                }
+                relativeShapes.add(relativePoints);
+            }
+            map.put(entry.getKey(), new PolygonCollection(relativeShapes));
+            i++;
+        }
+    }
+
+    private static Vector2 relativize(Vector2 point, float minX, float maxX, float minY, float maxY) {
         float xRange = maxX - minX;
         float yRange = maxY - minY;
         float maxRange = Math.max(xRange, yRange);
@@ -138,20 +156,6 @@ public class CountryRenderer {
             minY = mid - maxRange / 2;
             maxY = mid + maxRange / 2;
         }
-        Map<String, PolygonCollection> relativeShapes = new HashMap<>();
-        for (Map.Entry<String, List<List<Vector2>>> entry : shapes.entrySet()) {
-            List<List<Vector2>> county = new ArrayList<>();
-            for (List<Vector2> points : entry.getValue()) {
-                List<Vector2> relativePoints = new ArrayList<>();
-                for (Vector2 point : points) relativePoints.add(relativize(point, minX, maxX, minY, maxY));
-                county.add(relativePoints);
-            }
-            relativeShapes.put(entry.getKey(), new PolygonCollection(county));
-        }
-        return relativeShapes;
-    }
-
-    private static Vector2 relativize(Vector2 point, float minX, float maxX, float minY, float maxY) {
         float xDiff = maxX - minX;
         float yDiff = maxY - minY;
         float x = ((point.x - minX) / xDiff) * 2f - 1f;

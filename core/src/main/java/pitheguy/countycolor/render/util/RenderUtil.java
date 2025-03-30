@@ -125,4 +125,10 @@ public class RenderUtil {
         layout.setText(font, text);
         return layout.height;
     }
+
+    public static void fixRollover(List<List<Vector2>> polygons) {
+        for (List<Vector2> points : polygons)
+            for (Vector2 point : points)
+                if (point.x > 0) point.add(-360, 0);
+    }
 }

@@ -148,7 +148,7 @@ public class StateRenderer {
             JsonValue root = reader.parse(Gdx.files.internal("metadata/counties.json"));
             JsonValue array = root.get("features");
 
-            Map<String, List<List<Vector2>>> shapes = new HashMap<>();
+            Map<String, PolygonCollection> shapes = new HashMap<>();
 
             for (JsonValue country : array) {
                 JsonValue properties = country.get("properties");
@@ -186,34 +186,14 @@ public class StateRenderer {
                     }
                     polygons.add(points);
                 }
-
-                shapes.put(properties.getString("NAME"), polygons);
+                if (state.equals("Alaska")) RenderUtil.fixRollover(polygons);
+                shapes.put(properties.getString("NAME"), new PolygonCollection(polygons));
             }
 
-            float minX = (float) shapes.values().stream()
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .mapToDouble(v -> v.x)
-                .min()
-                .getAsDouble();
-            float minY = (float) shapes.values().stream()
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .mapToDouble(v -> v.y)
-                .min()
-                .getAsDouble();
-            float maxX = (float) shapes.values().stream()
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .mapToDouble(v -> v.x)
-                .max()
-                .getAsDouble();
-            float maxY = (float) shapes.values().stream()
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .mapToDouble(v -> v.y)
-                .max()
-                .getAsDouble();
+            float minX = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMinX).min().getAsDouble();
+            float minY = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMinY).min().getAsDouble();
+            float maxX = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMaxX).max().getAsDouble();
+            float maxY = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMaxY).max().getAsDouble();
 
             float xRange = maxX - minX;
             float yRange = maxY - minY;
@@ -228,9 +208,9 @@ public class StateRenderer {
                 maxY = mid + maxRange / 2;
             }
             Map<String, PolygonCollection> relativeShapes = new HashMap<>();
-            for (Map.Entry<String, List<List<Vector2>>> entry : shapes.entrySet()) {
+            for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
                 List<List<Vector2>> county = new ArrayList<>();
-                for (List<Vector2> points : entry.getValue()) {
+                for (List<Vector2> points : entry.getValue().getPolygons()) {
                     List<Vector2> relativePoints = new ArrayList<>();
                     for (Vector2 point : points) relativePoints.add(relativize(point, minX, maxX, minY, maxY));
                     county.add(relativePoints);
