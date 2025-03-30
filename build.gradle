@@ -7,9 +7,9 @@ buildscript {
     google()
     maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
     maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
-    maven { url 'https://jitpack.io' }
   }
   dependencies {
+    classpath "com.android.tools.build:gradle:8.5.2"
 
   }
 }
@@ -27,7 +27,7 @@ allprojects {
   }
 }
 
-configure(subprojects.findAll({ it.name != 'android' })) {
+configure(subprojects - project(':android')) {
   apply plugin: 'java-library'
   sourceCompatibility = 8
 
@@ -53,7 +53,6 @@ configure(subprojects.findAll({ it.name != 'android' })) {
 
   compileJava {
     options.incremental = true
-
   }
 }
 
@@ -68,10 +67,6 @@ subprojects {
     maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
     maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
     maven { url 'https://jitpack.io' }
-  }
-
-  dependencies {
-    implementation 'com.github.micycle1:Clipper2-java:1.2.2b'
   }
 }
 
