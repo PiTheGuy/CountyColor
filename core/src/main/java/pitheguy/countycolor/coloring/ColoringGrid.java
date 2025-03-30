@@ -9,11 +9,14 @@ import pitheguy.countycolor.util.Util;
 
 import java.util.Base64;
 import java.util.BitSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ColoringGrid {
     private final Pixmap pixmap;
     private final BitSet bitSet;
     private MapColor color;
+    private ExecutorService pixmapUpdateExecutor;
 
     public ColoringGrid() {
         this.color = null;
@@ -21,6 +24,7 @@ public class ColoringGrid {
         pixmap.setColor(new Color(0, 0, 0, 0));
         pixmap.fill();
         bitSet = new BitSet(RenderConst.COLORING_SIZE * RenderConst.COLORING_SIZE);
+        pixmapUpdateExecutor = Executors.newSingleThreadExecutor();
     }
 
     private ColoringGrid(Pixmap pixmap, BitSet bitSet, MapColor color) {
@@ -75,7 +79,7 @@ public class ColoringGrid {
         int effectiveBrushSize = (int) (brushSize * RenderConst.COLORING_RESOLUTION);
         int centerX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + RenderConst.COLORING_SIZE / 2f);
         int centerY = (int) (pos.y * RenderConst.COLORING_RESOLUTION + RenderConst.COLORING_SIZE / 2f);
-        pixmap.fillCircle(centerX, RenderConst.COLORING_SIZE - centerY, effectiveBrushSize);
+        pixmapUpdateExecutor.submit(() -> pixmap.fillCircle(centerX, RenderConst.COLORING_SIZE - centerY, effectiveBrushSize));
         int startX = (int) (pos.x * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
         int startY = (int) (pos.y * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
         int endX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + effectiveBrushSize);
@@ -107,5 +111,6 @@ public class ColoringGrid {
 
     public void dispose() {
         pixmap.dispose();
+        pixmapUpdateExecutor.shutdownNow();
     }
 }
