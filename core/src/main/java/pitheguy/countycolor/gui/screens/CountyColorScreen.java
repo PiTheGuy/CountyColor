@@ -34,6 +34,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private final CountyRenderer countyRenderer;
     private final ColoringRenderer coloringRenderer = new ColoringRenderer();
     private final Stage stage;
+    private Button backButton;
     private Slider slider;
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
@@ -50,7 +51,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private float timeSinceSave = 0f;
     private boolean inTransition = false;
     private boolean dirty = false;
-    private Button backButton;
+    private Thread saveThread;
 
     public CountyColorScreen(Game game, String county, String state, boolean load) {
         this.game = game;
@@ -87,13 +88,13 @@ public class CountyColorScreen implements Screen, InputProcessor {
         });
         stage.addActor(slider);
         backButton = new Button(skin);
-        Texture arrowTexture = new Texture(Gdx.files.internal("icons/back.png"));
+        Texture arrowTexture = new Texture(Gdx.files.internal("icons/menu.png"));
         backButton.add(new Image(arrowTexture));
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 saveAsync();
-                game.setScreen(new StateScreen(game, state));
+                game.setScreen(new CountyColorMenuScreen(game, CountyColorScreen.this));
             }
         });
         backButton.setSize(40, 40);
@@ -251,13 +252,6 @@ public class CountyColorScreen implements Screen, InputProcessor {
         return true;
     }
 
-    private String getProgressString() {
-        float percent = getCompletion() * 100;
-        return String.format("Progress: %d / %d (%.2f%%)", Math.min(coloringGrid.coloredPoints(), totalPixels), totalPixels, percent);
-    }
-
-
-
     private float getCompletion() {
         return (float) Math.min((double) coloringGrid.coloredPoints() / totalPixels, 1);
     }
@@ -275,7 +269,16 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private void saveAsync() {
-        new Thread(this::save).start();
+        saveThread = new Thread(this::save);
+        saveThread.start();
+    }
+
+    public void awaitSave() {
+        try {
+            if (saveThread != null) saveThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Save thread interrupted", e);
+        }
     }
 
     private void save() {
@@ -341,13 +344,26 @@ public class CountyColorScreen implements Screen, InputProcessor {
     public void show() {
         if (coloringGridFuture != null) coloringGrid = Util.getFutureValue(coloringGridFuture);
         InputManager.setInputProcessor(new InputMultiplexer(stage, this));
-
     }
+
+    public String getState() {
+        return state;
+    }
+
+    @Override
+    public boolean keyUp(int keycode) {
+        if (keycode == Input.Keys.ESCAPE) {
+            saveAsync();
+            game.setScreen(new CountyColorMenuScreen(game, CountyColorScreen.this));
+            return true;
+        }
+        return false;
+    }
+
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
     @Override public boolean keyDown(int keycode) { return false; }
-    @Override public boolean keyUp(int keycode) { return false; }
     @Override public boolean keyTyped(char character) { return false; }
 }
