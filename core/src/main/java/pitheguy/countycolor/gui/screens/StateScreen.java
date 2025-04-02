@@ -20,7 +20,6 @@ import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.InputManager;
 import pitheguy.countycolor.util.Util;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class StateScreen implements Screen, InputProcessor {

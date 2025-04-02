@@ -1,8 +1,8 @@
 package pitheguy.countycolor.util;
 
 import java.io.*;
-import java.util.concurrent.*;
-import java.util.function.Supplier;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 

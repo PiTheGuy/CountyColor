@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
@@ -14,7 +13,6 @@ import pitheguy.countycolor.render.util.RenderUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
 
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 

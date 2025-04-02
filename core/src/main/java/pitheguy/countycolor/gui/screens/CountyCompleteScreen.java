@@ -9,7 +9,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
-import pitheguy.countycolor.render.renderer.StateRenderer;
 import pitheguy.countycolor.util.InputManager;
 
 public class CountyCompleteScreen implements Screen {
