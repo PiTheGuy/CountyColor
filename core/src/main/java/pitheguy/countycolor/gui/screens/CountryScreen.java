@@ -68,8 +68,8 @@ public class CountryScreen implements Screen, InputProcessor {
         renderer.renderCountry(camera, completionCounts);
         tooltip.hide();
         Vector3 mouseWorld = getMouseWorldCoords();
-        String selectedState = renderer.getStateAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
-        if (!selectedState.isEmpty() && !transitionHelper.isInTransition())
+        String selectedState = renderer.getSubregionAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+        if (selectedState != null && !transitionHelper.isInTransition())
             tooltip.show(stage, selectedState, getCompletionCountString(selectedState));
         stage.act(delta);
         stage.draw();
@@ -89,8 +89,8 @@ public class CountryScreen implements Screen, InputProcessor {
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
         Vector3 mouseWorld = getMouseWorldCoords();
-        String selectedState = renderer.getStateAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
-        if (selectedState.isEmpty()) return false;
+        String selectedState = renderer.getSubregionAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+        if (selectedState == null) return false;
         Zoom zoom = renderer.getTargetZoom(selectedState);
         transitionHelper.transition(zoom.center(), zoom.zoom(), new StateScreen(game, selectedState));
         return true;

@@ -10,13 +10,12 @@ import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 public class ColoringRenderer {
     private final SpriteBatch batch = new SpriteBatch();
     private Texture cachedTexture;
-    private int previousColoredPoints = 0;
 
     public void render(ColoringGrid grid, OrthographicCamera camera) {
-        if (cachedTexture == null || grid.coloredPoints() != previousColoredPoints) {
+        if (cachedTexture == null || grid.needsTextureUpdate()) {
             if (cachedTexture != null) cachedTexture.dispose();
             cachedTexture = new Texture(grid.asPixmap());
-            previousColoredPoints = grid.coloredPoints();
+            grid.textureUpdated();
         }
         batch.setProjectionMatrix(camera.combined);
         batch.begin();

@@ -167,10 +167,12 @@ public class CountyColorScreen implements Screen, InputProcessor {
             camera.position.add(worldDelta.x, worldDelta.y, 0);
             lastDrag.set(screenX, screenY);
             return true;
-        } else if (coloring && canColor()) {
-            Vector3 lastColorWorld = camera.unproject(new Vector3(lastColor.x, lastColor.y, 0));
-            applyBrush(lastColorWorld);
+        } else if (coloring) {
             lastColor.set(screenX, screenY);
+            if (canColor()) {
+                Vector3 lastColorWorld = camera.unproject(new Vector3(lastColor.x, lastColor.y, 0));
+                applyBrush(lastColorWorld);
+            }
         }
         return false;
     }
@@ -242,7 +244,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private boolean canColor(Vector2 pos) {
-        int numPoints = brushSize > 30 ? 128 : 32;
+        int numPoints = getNumTestPoints();
         for (int i = 0; i < numPoints; i++) {
             float angle = (float)(i * Math.PI * 2 / numPoints); // 0 to 2π
             float dx = brushSize * (float)Math.cos(angle);
@@ -251,6 +253,12 @@ public class CountyColorScreen implements Screen, InputProcessor {
             if (!countyRenderer.isCoordinateWithinCounty(offsetPoint)) return false;
         }
         return true;
+    }
+
+    private int getNumTestPoints() {
+        if (brushSize > 30) return 128;
+        else if (brushSize > 10) return 64;
+        else return 32;
     }
 
     public float getCompletion() {

@@ -8,14 +8,11 @@ import java.util.List;
 
 public class PolygonCollection {
     private final List<List<Vector2>> polygons;
-    private final float minX, minY, maxX, maxY;
+    private float minX, minY, maxX, maxY;
 
     public PolygonCollection(List<List<Vector2>> polygons) {
         this.polygons = polygons;
-        minX = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).min().getAsDouble();
-        minY = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.y).min().getAsDouble();
-        maxX = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).max().getAsDouble();
-        maxY = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.y).max().getAsDouble();
+        recalculateBounds();
     }
 
     public List<List<Vector2>> getPolygons() {
@@ -41,5 +38,12 @@ public class PolygonCollection {
     public boolean boundsCheck(Vector2 point) {
         Vector2 scaled = point.cpy().scl(2f / RenderConst.RENDER_SIZE);
         return scaled.x > minX && scaled.x < maxX && scaled.y > minY && scaled.y < maxY;
+    }
+
+    public void recalculateBounds() {
+        minX = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).min().getAsDouble();
+        minY = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.y).min().getAsDouble();
+        maxX = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).max().getAsDouble();
+        maxY = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.y).max().getAsDouble();
     }
 }

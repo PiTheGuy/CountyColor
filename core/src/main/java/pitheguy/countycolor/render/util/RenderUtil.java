@@ -6,8 +6,11 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ShortArray;
+import pitheguy.countycolor.render.PolygonCollection;
 
 import java.util.List;
+
+import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class RenderUtil {
 
@@ -25,7 +28,7 @@ public class RenderUtil {
         return inside;
     }
 
-    public static void drawThickPolyline(ShapeRenderer renderer, List<Vector2> points, float thickness, int size) {
+    public static void drawThickPolyline(ShapeRenderer renderer, List<Vector2> points, float thickness) {
         Vector2 lastV3 = null, lastV4 = null;
         //FIXME first and last vertex don't get a triangle between them
         for (int i = 0; i < points.size(); i++) {
@@ -34,10 +37,10 @@ public class RenderUtil {
             Vector2 direction = p2.cpy().sub(p1).nor();
             Vector2 perpendicular = new Vector2(-direction.y, direction.x).scl(thickness / 2f);
 
-            Vector2 v1 = p1.cpy().scl(size / 2f).add(perpendicular);
-            Vector2 v2 = p1.cpy().scl(size / 2f).sub(perpendicular);
-            Vector2 v3 = p2.cpy().scl(size / 2f).sub(perpendicular);
-            Vector2 v4 = p2.cpy().scl(size / 2f).add(perpendicular);
+            Vector2 v1 = p1.cpy().scl(RENDER_SIZE / 2f).add(perpendicular);
+            Vector2 v2 = p1.cpy().scl(RENDER_SIZE / 2f).sub(perpendicular);
+            Vector2 v3 = p2.cpy().scl(RENDER_SIZE / 2f).sub(perpendicular);
+            Vector2 v4 = p2.cpy().scl(RENDER_SIZE / 2f).add(perpendicular);
             renderer.triangle(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y);
             renderer.triangle(v3.x, v3.y, v4.x, v4.y, v1.x, v1.y);
             if (lastV3 != null) {
@@ -47,8 +50,8 @@ public class RenderUtil {
                 Vector2 inner = cross > 0 ? v2 : v1;
                 Vector2 prevOuter = cross > 0 ? lastV4 : lastV3;
                 Vector2 prevInner = cross > 0 ? lastV3 : lastV4;
-                renderer.triangle(prevOuter.x, prevOuter.y, p1.x * size / 2, p1.y * size / 2, outer.x, outer.y);
-                renderer.triangle(prevInner.x, prevInner.y, p1.x * size / 2, p1.y * size / 2, inner.x, inner.y);
+                renderer.triangle(prevOuter.x, prevOuter.y, p1.x * RENDER_SIZE / 2, p1.y * RENDER_SIZE / 2, outer.x, outer.y);
+                renderer.triangle(prevInner.x, prevInner.y, p1.x * RENDER_SIZE / 2, p1.y * RENDER_SIZE / 2, inner.x, inner.y);
             }
             lastV3 = v3;
             lastV4 = v4;
@@ -63,10 +66,6 @@ public class RenderUtil {
         }
         EarClippingTriangulator triangulator = new EarClippingTriangulator();
         return triangulator.computeTriangles(vertices);
-    }
-
-    public static void renderFilledPolygon(ShapeRenderer renderer, List<Vector2> points, float scale) {
-        renderFilledPolygon(renderer, points, triangulate(points), scale);
     }
 
     public static void renderFilledPolygon(ShapeRenderer renderer, List<Vector2> points, ShortArray triangles, float scale) {
@@ -127,9 +126,10 @@ public class RenderUtil {
         return layout.height;
     }
 
-    public static void fixRollover(List<List<Vector2>> polygons) {
-        for (List<Vector2> points : polygons)
+    public static void fixRollover(PolygonCollection polygons) {
+        for (List<Vector2> points : polygons.getPolygons())
             for (Vector2 point : points)
                 if (point.x > 0) point.add(-360, 0);
+        polygons.recalculateBounds();
     }
 }

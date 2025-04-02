@@ -17,6 +17,7 @@ public class ColoringGrid {
     private final BitSet bitSet;
     private MapColor color;
     private final ExecutorService pixmapUpdateExecutor;
+    private boolean needsTextureUpdate = false;
 
     public ColoringGrid() {
         this.color = null;
@@ -80,7 +81,10 @@ public class ColoringGrid {
         int effectiveBrushSize = (int) (brushSize * RenderConst.COLORING_RESOLUTION);
         int centerX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + RenderConst.COLORING_SIZE / 2f);
         int centerY = (int) (pos.y * RenderConst.COLORING_RESOLUTION + RenderConst.COLORING_SIZE / 2f);
-        pixmapUpdateExecutor.submit(() -> pixmap.fillCircle(centerX, RenderConst.COLORING_SIZE - centerY, effectiveBrushSize));
+        pixmapUpdateExecutor.submit(() -> {
+            pixmap.fillCircle(centerX, RenderConst.COLORING_SIZE - centerY, effectiveBrushSize);
+            needsTextureUpdate = true;
+        });
         int startX = (int) (pos.x * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
         int startY = (int) (pos.y * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
         int endX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + effectiveBrushSize);
@@ -108,6 +112,14 @@ public class ColoringGrid {
 
     public boolean isEmpty() {
         return bitSet.isEmpty();
+    }
+
+    public boolean needsTextureUpdate() {
+        return needsTextureUpdate;
+    }
+
+    public void textureUpdated() {
+        needsTextureUpdate = false;
     }
 
     public void dispose() {

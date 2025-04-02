@@ -73,8 +73,8 @@ public class StateScreen implements Screen, InputProcessor {
         infoTooltip.hide();
         if (pendingCounty == null) {
             Vector3 mouseWorld = getMouseWorldCoords();
-            String hoveringCounty = renderer.getCountyAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
-            if (!hoveringCounty.isEmpty())
+            String hoveringCounty = renderer.getSubregionAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+            if (hoveringCounty != null)
                 infoTooltip.show(stage, hoveringCounty, countyData.get(hoveringCounty).getCompletionString());
         }
         stage.act(delta);
@@ -150,8 +150,8 @@ public class StateScreen implements Screen, InputProcessor {
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
         Vector3 mouseWorld = getMouseWorldCoords();
-        String selectedCounty = renderer.getCountyAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
-        if (selectedCounty.isEmpty() || countyData.get(selectedCounty).isCompleted()) return false;
+        String selectedCounty = renderer.getSubregionAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+        if (selectedCounty == null || countyData.get(selectedCounty).isCompleted()) return false;
         Zoom zoom = renderer.getTargetZoom(selectedCounty);
         resetStage();
         if (countyData.get(selectedCounty).isStarted()) {
@@ -181,7 +181,7 @@ public class StateScreen implements Screen, InputProcessor {
         stage.getViewport().update(width, height, true);
         renderer.invalidateCache();
         backButton.setPosition(0, Gdx.graphics.getHeight() - backButton.getHeight());
-        
+
     }
 
     @Override

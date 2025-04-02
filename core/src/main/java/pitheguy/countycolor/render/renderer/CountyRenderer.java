@@ -2,159 +2,59 @@ package pitheguy.countycolor.render.renderer;
 
 import clipper2.core.*;
 import clipper2.offset.*;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.*;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
 
 import java.util.*;
-import java.util.Collections;
-import java.util.concurrent.*;
 
 import static pitheguy.countycolor.render.util.RenderConst.*;
 
-public class CountyRenderer {
-    private final ShapeRenderer shapeRenderer = new ShapeRenderer();
-    private final Future<List<List<Vector2>>> shapesFuture;
-    private final List<ShortArray> triangles = new ArrayList<>();
-    private List<List<Vector2>> shapes;
+public class CountyRenderer extends RegionRenderer {
+
+    private final String state;
 
     public CountyRenderer(String county, String state) {
-        this.shapesFuture = loadCounty(county, StateRenderer.getIdForState(state));
+        super("metadata/counties.json", properties -> properties.getString("STATEFP").equals(StateRenderer.getIdForState(state)) && properties.getString("Name").equals(county));
+        this.state = state;
     }
 
-    public void renderCounty(Camera camera) {
+    private PolygonCollection getShapes() {
         ensureLoadingFinished();
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.BLACK);
-        for (List<Vector2> points : shapes) {
-            List<Vector2> pointsCopy = new ArrayList<>(points);
-            pointsCopy.replaceAll(Vector2::cpy);
-            RenderUtil.drawThickPolyline(shapeRenderer, pointsCopy, (float) OUTLINE_THICKNESS, RENDER_SIZE);
-        }
-        shapeRenderer.end();
+        return shapes.get(shapes.keySet().iterator().next());
     }
 
-    public void renderCountyFilled(Camera camera, float scale, MapColor color) {
+    public void renderCounty(OrthographicCamera camera) {
+        updateCamera(camera);
+        renderRegion(camera, true);
+    }
+
+    public void renderCountyFilled(OrthographicCamera camera, float scale, MapColor color) {
         ensureLoadingFinished();
-        shapeRenderer.setProjectionMatrix(camera.combined);
+        updateCamera(camera);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        for (int i = 0; i < shapes.size(); i++) {
+        for (List<Vector2> points : getShapes().getPolygons()) {
             shapeRenderer.setColor(color.getColor());
-            List<Vector2> points = shapes.get(i);
-            RenderUtil.renderFilledPolygon(shapeRenderer, points, triangles.get(i), scale);
+            RenderUtil.renderFilledPolygon(shapeRenderer, points, triangles.computeIfAbsent(points, RenderUtil::triangulate), scale);
             shapeRenderer.setColor(Color.BLACK);
             List<Vector2> pointsCopy = new ArrayList<>(points);
             pointsCopy.replaceAll(vector2 -> vector2.cpy().scl(scale));
-            RenderUtil.drawThickPolyline(shapeRenderer, pointsCopy, (float) OUTLINE_THICKNESS, RENDER_SIZE);
+            RenderUtil.drawThickPolyline(shapeRenderer, pointsCopy, (float) OUTLINE_THICKNESS);
         }
         shapeRenderer.end();
     }
 
-    private void ensureLoadingFinished() {
-        if (shapes == null) {
-            try {
-                shapes = shapesFuture.get();
-                for (List<Vector2> points : shapes) triangles.add(RenderUtil.triangulate(points));
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    private static Future<List<List<Vector2>>> loadCounty(String county, String stateId) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        return executor.submit(() -> {
-            JsonReader reader = new JsonReader();
-            JsonValue root = reader.parse(Gdx.files.internal("metadata/counties.json"));
-            JsonValue array = root.get("features");
-            for (JsonValue country : array) {
-                JsonValue properties = country.get("properties");
-                if (!properties.getString("STATEFP").equals(stateId)) continue;
-                if (!properties.getString("NAME").equals(county)) continue;
-                JsonValue geometry = country.get("geometry");
-                String type = geometry.getString("type");
-                JsonValue coordinates = geometry.get("coordinates");
-                List<JsonValue> shapesJson;
-                switch (type) {
-                    case "Polygon":
-                        shapesJson = List.of(coordinates);
-                        break;
-                    case "MultiPolygon":
-                        List<JsonValue> polys = new ArrayList<>();
-                        for (JsonValue polygon : coordinates) polys.add(polygon);
-                        shapesJson = polys;
-                        break;
-                    default:
-                        throw new IllegalStateException("Unexpected type: " + type);
-                }
-                List<List<Vector2>> shapes = new ArrayList<>();
-                for (JsonValue arr : shapesJson) {
-                    JsonValue outer = arr.get(0); // use only the outer ring
-                    List<Vector2> points = new ArrayList<>();
-                    for (JsonValue point : outer) {
-                        float lat = point.getFloat(0);
-                        float lng = point.getFloat(1);
-                        points.add(new Vector2(lat, lng));
-                    }
-                    shapes.add(points);
-                }
-                float minX = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).min().getAsDouble();
-                float minY = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.y).min().getAsDouble();
-                float maxX = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).max().getAsDouble();
-                float maxY = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.y).max().getAsDouble();
-
-                if (maxX - minX > 180) {
-                    for (List<Vector2> shape : shapes) shape.replaceAll(CountyRenderer::normalize);
-                    minX = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).min().getAsDouble();
-                    maxX = (float) shapes.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).max().getAsDouble();
-                }
-
-                float xRange = maxX - minX;
-                float yRange = maxY - minY;
-                float maxRange = Math.max(xRange, yRange);
-                if (xRange < yRange) {
-                    float mid = minX + xRange / 2;
-                    minX = mid - maxRange / 2;
-                    maxX = mid + maxRange / 2;
-                } else {
-                    float mid = minY + yRange / 2;
-                    minY = mid - maxRange / 2;
-                    maxY = mid + maxRange / 2;
-                }
-
-                List<List<Vector2>> relativeShapes = new ArrayList<>();
-                for (List<Vector2> points : shapes) {
-                    List<Vector2> relativePoints = new ArrayList<>();
-                    for (Vector2 point : points) relativePoints.add(relativize(point, minX, maxX, minY, maxY));
-                    relativeShapes.add(relativePoints);
-                }
-                return relativeShapes;
-            }
-            return null;
-        });
-    }
-
-    private static Vector2 relativize(Vector2 point, float minX, float maxX, float minY, float maxY) {
-        float xDiff = maxX - minX;
-        float yDiff = maxY - minY;
-        float x = ((point.x - minX) / xDiff) * 2f - 1f;
-        float y = ((point.y - minY) / yDiff) * 2f - 1f;
-        return new Vector2(x, y);
-    }
-
-    private static Vector2 normalize(Vector2 point) {
-        if (point.x < 0) return new Vector2(point.x + 360, point.y);
-        return point;
+    @Override
+    protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
+        if (state.equals("Alaska")) RenderUtil.fixRollover(shapes.get(shapes.keySet().iterator().next()));
     }
 
     public boolean isCoordinateWithinCounty(Vector2 coordinate) {
-        return shapes.stream().anyMatch(polygon -> RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RENDER_SIZE), polygon));
+        return getSubregionAtCoords(coordinate) != null;
     }
 
     public int computeTotalGridSquares() {
@@ -162,7 +62,7 @@ public class CountyRenderer {
 
         float totalPerimeter = 0;
         float totalArea = 0;
-        for (List<Vector2> shape : shapes) {
+        for (List<Vector2> shape : getShapes().getPolygons()) {
             totalPerimeter += RenderUtil.calculatePerimeter(shape);
             totalArea += RenderUtil.calculateArea(shape);
         }
@@ -173,9 +73,9 @@ public class CountyRenderer {
         int halfGridSize = coloringSize / 2;
         int total = 0;
         List<List<Vector2>> scaledPolygons = new ArrayList<>();
-        for (List<Vector2> poly : shapes) {
+        for (List<Vector2> poly : getShapes().getPolygons()) {
             List<Vector2> scaled = new ArrayList<>();
-            for (Vector2 p : poly) scaled.add(new Vector2(p).scl(RENDER_SIZE / 2f));
+            for (Vector2 p : poly) scaled.add(p.cpy().scl(RENDER_SIZE / 2f));
             List<List<Vector2>> shrunk = shrinkPolygon(scaled);
             scaledPolygons.addAll(shrunk);
         }
@@ -250,10 +150,6 @@ public class CountyRenderer {
         }
         merged.add(current);
         return merged;
-    }
-
-    public void dispose() {
-        shapeRenderer.dispose();
     }
 
     private static class Interval {

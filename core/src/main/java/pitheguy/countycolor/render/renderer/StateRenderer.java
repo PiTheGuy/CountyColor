@@ -1,45 +1,38 @@
 package pitheguy.countycolor.render.renderer;
 
-import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.*;
+import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
-import pitheguy.countycolor.render.Zoom;
-import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.render.util.RenderUtil;
-import pitheguy.countycolor.util.Util;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
-public class StateRenderer {
-    private static final Map<String, String> ID_TO_STATE = new HashMap<>();
+public class StateRenderer extends RegionRenderer {
     private static final Map<String, String> STATE_TO_ID = new HashMap<>();
     static {
         initStateIdMap();
     }
-    private final ShapeRenderer shapeRenderer = new ShapeRenderer();
-    private final Future<Map<String, PolygonCollection>> shapesFuture;
     private final BooleanSupplier useCachedTexture;
-    private final Map<List<Vector2>, ShortArray> triangles = new HashMap<>();
     private final SpriteBatch batch = new SpriteBatch();
-    private Map<String, PolygonCollection> shapes = null;
+    private final String state;
     private FrameBuffer frameBuffer;
     private TextureRegion cachedTexture;
 
 
     public StateRenderer(String state, BooleanSupplier useCachedTexture) {
-        this.shapesFuture = loadState(state);
+        super("metadata/counties.json", properties -> properties.getString("STATEFP").equals(STATE_TO_ID.get(state)));
+        this.state = state;
         this.useCachedTexture = useCachedTexture;
     }
 
@@ -78,61 +71,25 @@ public class StateRenderer {
 
     private void renderStateInternal(OrthographicCamera camera, CountyData countyData) {
         ensureLoadingFinished();
-        shapeRenderer.setProjectionMatrix(camera.combined);
+        updateCamera(camera);
+        renderBackground();
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.WHITE);
-        shapeRenderer.rect(-RENDER_SIZE, -RENDER_SIZE, RENDER_SIZE * 2, RENDER_SIZE * 2); // White background
+        for (String county : shapes.keySet())
+            if (countyData.get(county).isCompleted())
+                fillSubregion(county, countyData.get(county).mapColor().getColor());
         shapeRenderer.end();
-        ShapeRenderer lineRenderer = new ShapeRenderer();
-        lineRenderer.setProjectionMatrix(camera.combined);
-        lineRenderer.setColor(Color.BLACK);
-        lineRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        for (String county : shapes.keySet()) {
-            PolygonCollection countyPolygons = shapes.get(county);
-            if (countyData.get(county).isCompleted()) {
-                shapeRenderer.setColor(countyData.get(county).mapColor().getColor());
-                for (List<Vector2> points : countyPolygons.getPolygons())
-                    RenderUtil.renderFilledPolygon(shapeRenderer, points, getTriangles(points), 1);
-            }
-            shapeRenderer.setColor(Color.BLACK);
-            if (Gdx.app.getType() == Application.ApplicationType.Desktop)
-                for (List<Vector2> points : countyPolygons.getPolygons())
-                    RenderUtil.drawThickPolyline(shapeRenderer, points, RenderConst.OUTLINE_THICKNESS * camera.zoom, RENDER_SIZE);
-            else renderMobile(lineRenderer, countyPolygons);
-        }
-        lineRenderer.end();
-        lineRenderer.dispose();
-        shapeRenderer.end();
-    }
-
-    private void renderMobile(ShapeRenderer lineRenderer, PolygonCollection countyPolygons) {
-        for (List<Vector2> points : countyPolygons.getPolygons()) {
-            for (int i = 0; i < points.size() - 1; i++) {
-                Vector2 point = points.get(i);
-                Vector2 endPoint = points.get(i + 1);
-                lineRenderer.line(point.x * RENDER_SIZE / 2f, point.y * RENDER_SIZE / 2f, endPoint.x * RENDER_SIZE / 2f, endPoint.y * RENDER_SIZE / 2);
-            }
-        }
+        renderRegion(camera, true);
     }
 
     public void invalidateCache() {
+        if (cachedTexture != null) cachedTexture.getTexture().dispose();
         cachedTexture = null;
-    }
-
-    private ShortArray getTriangles(List<Vector2> points) {
-        return triangles.computeIfAbsent(points, RenderUtil::triangulate);
-    }
-
-    private void ensureLoadingFinished() {
-        if (shapes == null) shapes = Util.getFutureValue(shapesFuture);
     }
 
     private static void initStateIdMap() {
         String[] mappings = Gdx.files.internal("metadata/state_ids.txt").readString().split("\n");
         for (String mapping : mappings) {
             String[] parts = mapping.split("=");
-            ID_TO_STATE.put(parts[1], parts[0]);
             STATE_TO_ID.put(parts[0], parts[1]);
         }
     }
@@ -141,121 +98,13 @@ public class StateRenderer {
         return STATE_TO_ID.get(state);
     }
 
-    private Future<Map<String, PolygonCollection>> loadState(String state) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        return executor.submit(() -> {
-            JsonReader reader = new JsonReader();
-            JsonValue root = reader.parse(Gdx.files.internal("metadata/counties.json"));
-            JsonValue array = root.get("features");
-
-            Map<String, PolygonCollection> shapes = new HashMap<>();
-
-            for (JsonValue country : array) {
-                JsonValue properties = country.get("properties");
-                String stateId = properties.getString("STATEFP");
-
-                if (!state.equals(ID_TO_STATE.get(stateId))) continue;
-
-                JsonValue geometry = country.get("geometry");
-                String type = geometry.getString("type");
-                JsonValue coordinates = geometry.get("coordinates");
-
-                List<JsonValue> shapesJson;
-                switch (type) {
-                    case "Polygon":
-                        shapesJson = List.of(coordinates);
-                        break;
-                    case "MultiPolygon":
-                        List<JsonValue> polys = new ArrayList<>();
-                        for (JsonValue polygon : coordinates) polys.add(polygon);
-                        shapesJson = polys;
-                        break;
-                    default:
-                        throw new IllegalStateException("Unexpected type: " + type);
-                }
-
-                List<List<Vector2>> polygons = new ArrayList<>();
-
-                for (JsonValue arr : shapesJson) {
-                    JsonValue outer = arr.get(0); // Use outer ring
-                    List<Vector2> points = new ArrayList<>();
-                    for (JsonValue point : outer) {
-                        float lat = point.getFloat(0);
-                        float lng = point.getFloat(1);
-                        points.add(new Vector2(lat, lng));
-                    }
-                    polygons.add(points);
-                }
-                if (state.equals("Alaska")) RenderUtil.fixRollover(polygons);
-                shapes.put(properties.getString("NAME"), new PolygonCollection(polygons));
-            }
-
-            float minX = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMinX).min().getAsDouble();
-            float minY = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMinY).min().getAsDouble();
-            float maxX = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMaxX).max().getAsDouble();
-            float maxY = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMaxY).max().getAsDouble();
-
-            float xRange = maxX - minX;
-            float yRange = maxY - minY;
-            float maxRange = Math.max(xRange, yRange);
-            if (xRange < yRange) {
-                float mid = minX + xRange / 2;
-                minX = mid - maxRange / 2;
-                maxX = mid + maxRange / 2;
-            } else {
-                float mid = minY + yRange / 2;
-                minY = mid - maxRange / 2;
-                maxY = mid + maxRange / 2;
-            }
-            Map<String, PolygonCollection> relativeShapes = new HashMap<>();
-            for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
-                List<List<Vector2>> county = new ArrayList<>();
-                for (List<Vector2> points : entry.getValue().getPolygons()) {
-                    List<Vector2> relativePoints = new ArrayList<>();
-                    for (Vector2 point : points) relativePoints.add(relativize(point, minX, maxX, minY, maxY));
-                    county.add(relativePoints);
-                }
-                relativeShapes.put(entry.getKey(), new PolygonCollection(county));
-            }
-            return relativeShapes;
-        });
-    }
-
-    private static Vector2 relativize(Vector2 point, float minX, float maxX, float minY, float maxY) {
-        float xDiff = maxX - minX;
-        float yDiff = maxY - minY;
-        float x = ((point.x - minX) / xDiff) * 2f - 1f;
-        float y = ((point.y - minY) / yDiff) * 2f - 1f;
-        return new Vector2(x, y);
-    }
-
-    public String getCountyAtCoords(Vector2 coordinate) {
-        for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
-            PolygonCollection county = entry.getValue();
-            if (!county.boundsCheck(coordinate)) continue;
-            for (List<Vector2> polygon : county.getPolygons())
-                if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RENDER_SIZE), polygon))
-                    return entry.getKey();
-        }
-        return "";
-    }
-
-    public Zoom getTargetZoom(String county) {
-        PolygonCollection countyPolygons = shapes.get(county);
-        float minX = countyPolygons.getMinX();
-        float minY = countyPolygons.getMinY();
-        float maxX = countyPolygons.getMaxX();
-        float maxY = countyPolygons.getMaxY();
-        float xRange = (maxX - minX) / 2;
-        float yRange = (maxY - minY) / 2;
-        float zoom = Math.max(xRange, yRange) * RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        float xCenter = (minX + maxX) / 4f * RENDER_SIZE;
-        float yCenter = (minY + maxY) / 4f * RENDER_SIZE;
-        return new Zoom(new Vector2(xCenter, yCenter), zoom);
+    @Override
+    protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
+        if (state.equals("Alaska")) for (PolygonCollection polygons : shapes.values()) RenderUtil.fixRollover(polygons);
     }
 
     public void dispose() {
-        shapeRenderer.dispose();
+        super.dispose();
         batch.dispose();
         if (cachedTexture != null) cachedTexture.getTexture().dispose();
         if (frameBuffer != null) frameBuffer.dispose();
