@@ -3,6 +3,7 @@ package pitheguy.countycolor.coloring;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.Util;
@@ -12,7 +13,7 @@ import java.util.BitSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ColoringGrid {
+public class ColoringGrid implements Disposable {
     private final Pixmap pixmap;
     private final BitSet bitSet;
     private MapColor color;
