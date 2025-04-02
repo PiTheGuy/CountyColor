@@ -27,9 +27,10 @@ public class RenderUtil {
 
     public static void drawThickPolyline(ShapeRenderer renderer, List<Vector2> points, float thickness, int size) {
         Vector2 lastV3 = null, lastV4 = null;
-        for (int i = 0; i < points.size() - 1; i++) {
+        //FIXME first and last vertex don't get a triangle between them
+        for (int i = 0; i < points.size(); i++) {
             Vector2 p1 = points.get(i);
-            Vector2 p2 = points.get(i + 1);
+            Vector2 p2 = points.get((i + 1) % points.size());
             Vector2 direction = p2.cpy().sub(p1).nor();
             Vector2 perpendicular = new Vector2(-direction.y, direction.x).scl(thickness / 2f);
 

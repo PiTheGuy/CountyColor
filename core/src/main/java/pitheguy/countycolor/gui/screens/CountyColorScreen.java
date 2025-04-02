@@ -52,6 +52,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private boolean inTransition = false;
     private boolean dirty = false;
     private Thread saveThread;
+    private boolean markedAsComplete = false;
 
     public CountyColorScreen(Game game, String county, String state, boolean load) {
         this.game = game;
@@ -252,8 +253,12 @@ public class CountyColorScreen implements Screen, InputProcessor {
         return true;
     }
 
-    private float getCompletion() {
-        return (float) Math.min((double) coloringGrid.coloredPoints() / totalPixels, 1);
+    public float getCompletion() {
+        return markedAsComplete ? 1 : (float) Math.min((double) coloringGrid.coloredPoints() / totalPixels, 1);
+    }
+
+    public void markAsComplete() {
+        markedAsComplete = true;
     }
 
     @Override

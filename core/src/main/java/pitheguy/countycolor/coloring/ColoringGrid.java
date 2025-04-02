@@ -16,7 +16,7 @@ public class ColoringGrid {
     private final Pixmap pixmap;
     private final BitSet bitSet;
     private MapColor color;
-    private ExecutorService pixmapUpdateExecutor;
+    private final ExecutorService pixmapUpdateExecutor;
 
     public ColoringGrid() {
         this.color = null;
@@ -31,6 +31,7 @@ public class ColoringGrid {
         this.pixmap = pixmap;
         this.bitSet = bitSet;
         this.color = color;
+        pixmapUpdateExecutor = Executors.newSingleThreadExecutor();
     }
 
     public static ColoringGrid fromJson(JsonValue json) {

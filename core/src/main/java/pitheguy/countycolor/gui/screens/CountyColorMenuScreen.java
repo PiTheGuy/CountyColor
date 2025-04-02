@@ -47,6 +47,17 @@ public class CountyColorMenuScreen extends InputAdapter implements Screen {
             }
         });
         root.add(exitButton).expandX().center().row();
+        if (lastScreen.getCompletion() > 0.999) {
+            TextButton markAsCompleteButton = new TextButton("Mark as Complete", skin);
+            markAsCompleteButton.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    lastScreen.markAsComplete();
+                    game.setScreen(lastScreen);
+                }
+            });
+            root.add(markAsCompleteButton).expandX().center().row();
+        }
         root.setPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
         stage.addActor(root);
     }
