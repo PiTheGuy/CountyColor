@@ -130,6 +130,10 @@ public class CountryScreen implements Screen, InputProcessor {
         });
     }
 
+    public boolean isRendererReady() {
+        return renderer.isDoneLoading();
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void show() {}

@@ -26,7 +26,11 @@ public abstract class RegionRenderer implements Disposable {
 
 
     public RegionRenderer(String sourceFilePath, Predicate<JsonValue> predicate) {
-        shapesFuture = loadShapesAsync(sourceFilePath, predicate);
+        this(sourceFilePath, predicate, null);
+    }
+
+    public RegionRenderer(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+        shapesFuture = loadShapesAsync(sourceFilePath, predicate, duplicatePreventionKey);
     }
 
     protected void renderRegion(OrthographicCamera camera, boolean thick, boolean scaleThickness) {
@@ -68,12 +72,12 @@ public abstract class RegionRenderer implements Disposable {
         shapeRenderer.setProjectionMatrix(camera.combined);
     }
 
-    private Future<Map<String, PolygonCollection>> loadShapesAsync(String sourceFilePath, Predicate<JsonValue> predicate) {
+    private Future<Map<String, PolygonCollection>> loadShapesAsync(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        return executor.submit(() -> loadShapes(sourceFilePath, predicate));
+        return executor.submit(() -> loadShapes(sourceFilePath, predicate, duplicatePreventionKey));
     }
 
-    protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate) {
+    protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
         JsonReader reader = new JsonReader();
         JsonValue root = reader.parse(Gdx.files.internal(sourceFilePath));
         JsonValue array = root.get("features");
@@ -82,8 +86,9 @@ public abstract class RegionRenderer implements Disposable {
             JsonValue properties = subregion.get("properties");
             if (!predicate.test(properties)) continue;
             String subregionName = properties.getString("NAME");
+            String duplicatePrevention = duplicatePreventionKey == null ? "" : properties.getString(duplicatePreventionKey);
             PolygonCollection polygons = loadSubregion(subregion);
-            shapes.put(subregionName, polygons);
+            shapes.put(subregionName + duplicatePrevention, polygons);
         }
         postProcessShapes(shapes);
         return relativize(shapes);
@@ -126,6 +131,10 @@ public abstract class RegionRenderer implements Disposable {
 
     protected void ensureLoadingFinished() {
         if (shapes == null) shapes = Util.getFutureValue(shapesFuture);
+    }
+
+    public boolean isDoneLoading() {
+        return shapesFuture.isDone();
     }
 
     protected static Map<String, PolygonCollection> relativize(Map<String, PolygonCollection> shapes) {

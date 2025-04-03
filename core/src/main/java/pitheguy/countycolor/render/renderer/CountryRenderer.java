@@ -50,7 +50,7 @@ public class CountryRenderer extends RegionRenderer {
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate) {
+    protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
         JsonReader reader = new JsonReader();
         JsonValue root = reader.parse(Gdx.files.internal(sourceFilePath));
         JsonValue array = root.get("features");

@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import pitheguy.countycolor.gui.screens.CountryScreen;
+import pitheguy.countycolor.gui.screens.TitleScreen;
 import pitheguy.countycolor.util.Util;
 
 public class CountyColor extends Game {
@@ -17,7 +18,7 @@ public class CountyColor extends Game {
     @Override
     public void create() {
         instance = this;
-        setScreen(new CountryScreen(this));
+        setScreen(new TitleScreen(this));
         font = new BitmapFont();
         batch = new SpriteBatch();
     }
