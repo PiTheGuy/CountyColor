@@ -78,7 +78,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     private void initStage() {
         stage.clear();
-        Skin skin = new Skin(Gdx.files.internal("skin.json"));
+        Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
         slider = new Slider(1, 75, 1, false, skin);
         slider.setSize(200, 20);
         slider.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() - 30);

@@ -25,7 +25,7 @@ public class CountyCompleteScreen implements Screen {
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         stateScreen = new StateScreen(game, state);
         InputManager.setInputProcessor(stage);
-        Skin skin = new Skin(Gdx.files.internal("skin.json"));
+        Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
         TextButton button = new TextButton("Continue", skin);
         button.setSize(200, 60);
         button.setPosition(Gdx.graphics.getWidth() / 2f - button.getWidth() / 2, 100);

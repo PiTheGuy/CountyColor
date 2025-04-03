@@ -11,7 +11,7 @@ public class CountyColorMenuScreen extends InputAdapter implements Screen {
     private final Game game;
     private final CountyColorScreen lastScreen;
     private final Stage stage = new Stage();
-    private final Skin skin = new Skin(Gdx.files.internal("skin.json"));
+    private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
 
     public CountyColorMenuScreen(Game game, CountyColorScreen lastScreen) {
         this.game = game;

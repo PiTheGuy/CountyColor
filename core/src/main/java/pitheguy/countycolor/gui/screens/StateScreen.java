@@ -29,7 +29,7 @@ public class StateScreen implements Screen, InputProcessor {
     private final OrthographicCamera hudCamera;
     private final StateRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
-    private final Skin skin = new Skin(Gdx.files.internal("skin.json"));
+    private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
     private float maxZoom;
     private CountyData countyData;
     private final Future<CountyData> countyDataFuture;
