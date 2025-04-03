@@ -46,7 +46,7 @@ public class CountryRenderer extends RegionRenderer {
             for (String stateName : completedStates) fillSubregion(stateName, Color.GREEN);
             shapeRenderer.end();
         }
-        renderRegion(camera, false);
+        renderRegion(camera, false, true);
     }
 
     @Override

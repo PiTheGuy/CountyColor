@@ -29,7 +29,7 @@ public abstract class RegionRenderer implements Disposable {
         shapesFuture = loadShapesAsync(sourceFilePath, predicate);
     }
 
-    protected void renderRegion(OrthographicCamera camera, boolean thick) {
+    protected void renderRegion(OrthographicCamera camera, boolean thick, boolean scaleThickness) {
         ensureLoadingFinished();
         shapeRenderer.begin(thick ? ShapeRenderer.ShapeType.Filled : ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.BLACK);
@@ -37,7 +37,7 @@ public abstract class RegionRenderer implements Disposable {
             PolygonCollection subregionPolygons = shapes.get(subregion);
             for (List<Vector2> points : subregionPolygons.getPolygons()) {
                 if (thick)
-                    RenderUtil.drawThickPolyline(shapeRenderer, points, OUTLINE_THICKNESS * camera.zoom);
+                    RenderUtil.drawThickPolyline(shapeRenderer, points, scaleThickness ? OUTLINE_THICKNESS * camera.zoom : OUTLINE_THICKNESS);
                 else for (int i = 0; i < points.size() - 1; i++) {
                     Vector2 point = points.get(i);
                     Vector2 endPoint = points.get(i + 1);

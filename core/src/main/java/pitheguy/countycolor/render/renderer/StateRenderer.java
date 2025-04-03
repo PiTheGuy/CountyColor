@@ -76,7 +76,7 @@ public class StateRenderer extends RegionRenderer {
             if (countyData.get(county).isCompleted())
                 fillSubregion(county, countyData.get(county).mapColor().getColor());
         shapeRenderer.end();
-        renderRegion(camera, true);
+        renderRegion(camera, true, true);
     }
 
     public void invalidateCache() {

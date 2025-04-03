@@ -30,7 +30,7 @@ public class CountyRenderer extends RegionRenderer {
 
     public void renderCounty(OrthographicCamera camera) {
         updateCamera(camera);
-        renderRegion(camera, true);
+        renderRegion(camera, true, false);
     }
 
     public void renderCountyFilled(OrthographicCamera camera, float scale, MapColor color) {
