@@ -17,6 +17,7 @@ public class CountyCompleteScreen implements Screen {
     private final CountyRenderer countyRenderer;
     private final MapColor color;
     private final StateScreen stateScreen;
+    private final Skin skin;
 
     public CountyCompleteScreen(Game game, String county, String state, MapColor color) {
         this.color = color;
@@ -25,7 +26,7 @@ public class CountyCompleteScreen implements Screen {
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         stateScreen = new StateScreen(game, state);
         InputManager.setInputProcessor(stage);
-        Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
+        skin = new Skin(Gdx.files.internal("skin/skin.json"));
         TextButton button = new TextButton("Continue", skin);
         button.setSize(200, 60);
         button.setPosition(Gdx.graphics.getWidth() / 2f - button.getWidth() / 2, 100);
@@ -52,10 +53,15 @@ public class CountyCompleteScreen implements Screen {
         countyRenderer.renderCountyFilled(camera, 0.5f, color);
     }
 
+    @Override public void dispose() {
+        stage.dispose();
+        countyRenderer.dispose();
+        skin.dispose();
+    }
+
     @Override public void show() {}
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-    @Override public void dispose() {}
 }

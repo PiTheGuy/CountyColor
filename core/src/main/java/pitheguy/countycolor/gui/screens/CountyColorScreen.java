@@ -35,6 +35,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private final CountyRenderer countyRenderer;
     private final ColoringRenderer coloringRenderer = new ColoringRenderer();
     private final Stage stage;
+    private Skin skin;
     private Button backButton;
     private Slider slider;
     private final BitmapFont font = new BitmapFont();
@@ -78,7 +79,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     private void initStage() {
         stage.clear();
-        Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
+        skin = new Skin(Gdx.files.internal("skin/skin.json"));
         slider = new Slider(1, 75, 1, false, skin);
         slider.setSize(200, 20);
         slider.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() - 30);
@@ -280,6 +281,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         batch.dispose();
         font.dispose();
         progressBarRenderer.dispose();
+        skin.dispose();
     }
 
     private void saveAsync() {

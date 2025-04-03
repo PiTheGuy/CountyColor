@@ -60,6 +60,7 @@ public class CountryScreen implements Screen, InputProcessor {
         font.dispose();
         batch.dispose();
         stage.dispose();
+        tooltip.getSkin().dispose();
     }
 
     @Override
