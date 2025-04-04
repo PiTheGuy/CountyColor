@@ -1,8 +1,7 @@
 package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
@@ -34,11 +33,9 @@ public class StateRenderer extends RegionRenderer {
     }
 
     public void renderState(OrthographicCamera camera, CountyData countyData) {
+        Gdx.gl.glClearColor(1, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.rect(-RENDER_SIZE, -RENDER_SIZE, RENDER_SIZE * 2, RENDER_SIZE * 2);
-        shapeRenderer.end();
         if (useCachedTexture.getAsBoolean()) cachingHelper.render(camera, cam -> renderStateInternal(cam, countyData));
         else renderStateInternal(camera, countyData);
     }

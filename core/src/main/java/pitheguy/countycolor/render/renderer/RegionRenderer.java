@@ -1,8 +1,7 @@
 package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.*;
@@ -53,10 +52,8 @@ public abstract class RegionRenderer implements Disposable {
     }
 
     protected void renderBackground() {
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.WHITE);
-        shapeRenderer.rect(-RENDER_SIZE, -RENDER_SIZE, RENDER_SIZE * 2, RENDER_SIZE * 2);
-        shapeRenderer.end();
+        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
     }
 
     protected void fillSubregion(String subregion, Color color) {
