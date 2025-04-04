@@ -59,6 +59,10 @@ public class TitleScreenCountryRenderer implements Disposable {
         cachingHelper.dispose();
     }
 
+    public boolean isDoneLoading() {
+        return outlineRenderer.isDoneLoading() && fillRenderer.isDoneLoading();
+    }
+
     private static class OutlineRenderer extends RegionRenderer {
         public OutlineRenderer() {
             super("metadata/counties.json", properties -> !HIDDEN_STATES.contains(StateRenderer.getStateFromId(properties.getString("STATEFP"))), "STATEFP");

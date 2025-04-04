@@ -1,7 +1,8 @@
 package pitheguy.countycolor.gui.screens;
 
 import com.badlogic.gdx.*;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
@@ -21,6 +22,8 @@ public class TitleScreen implements Screen {
     private final CountryScreen countryScreen;
     private boolean awaitingLoad = false;
     private Table table;
+    private final BitmapFont font = new BitmapFont();
+    private final SpriteBatch batch = new SpriteBatch();
 
     public TitleScreen(Game game) {
         this.game = game;
@@ -68,10 +71,15 @@ public class TitleScreen implements Screen {
     @Override
     public void show() {
         InputManager.setInputProcessor(stage);
+
     }
 
     @Override
     public void render(float delta) {
+        if (!renderer.isDoneLoading()) {
+            renderLoadingText();
+            return;
+        }
         renderer.render(camera);
         stage.act(delta);
         stage.draw();
@@ -80,10 +88,23 @@ public class TitleScreen implements Screen {
         }
     }
 
+    private void renderLoadingText() {
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.begin();
+        GlyphLayout layout = new GlyphLayout(font, "Loading...");
+        float x = (Gdx.graphics.getWidth() - layout.width) / 2;
+        float y = (Gdx.graphics.getHeight() + layout.height) / 2;
+        font.draw(batch, layout, x, y);
+        batch.end();
+    }
+
     @Override
     public void dispose() {
         stage.dispose();
         skin.dispose();
+        font.dispose();
+        batch.dispose();
     }
 
     @Override
