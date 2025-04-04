@@ -1,7 +1,6 @@
 package pitheguy.countycolor.gui.screens;
 
 import com.badlogic.gdx.*;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -19,8 +18,9 @@ public class TitleScreen implements Screen {
     private final Stage stage;
     private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
     private final OrthographicCamera hudCamera;
-    private CountryScreen countryScreen;
+    private final CountryScreen countryScreen;
     private boolean awaitingLoad = false;
+    private Table table;
 
     public TitleScreen(Game game) {
         this.game = game;
@@ -35,9 +35,9 @@ public class TitleScreen implements Screen {
     }
 
     private void initStage() {
-        Table root = new Table(skin);
+        table = new Table(skin);
         Label title = new Label("CountyColor", skin, "title");
-        root.add(title).row();
+        table.add(title).row();
         TextButton startColoringButton = new TextButton("Start Coloring", skin);
         startColoringButton.addListener(new ClickListener() {
             @Override
@@ -50,9 +50,9 @@ public class TitleScreen implements Screen {
                 }
             }
         });
-        root.add(startColoringButton).row();
+        table.add(startColoringButton).row();
         TextButton optionsButton = new TextButton("Options", skin); //TODO implement options screen
-        root.add(optionsButton).row();
+        table.add(optionsButton).row();
         TextButton quitToDesktopButton = new TextButton("Quit to Desktop", skin);
         quitToDesktopButton.addListener(new ClickListener() {
             @Override
@@ -60,9 +60,9 @@ public class TitleScreen implements Screen {
                 Gdx.app.exit();
             }
         });
-        root.add(quitToDesktopButton).row();
-        root.setPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
-        stage.addActor(root);
+        table.add(quitToDesktopButton).row();
+        table.setPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
+        stage.addActor(table);
     }
 
     @Override
@@ -95,6 +95,8 @@ public class TitleScreen implements Screen {
         hudCamera.setToOrtho(false, width, height);
         hudCamera.update();
         stage.getViewport().update(width, height, true);
+        table.setPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
+        renderer.invalidateCache();
     }
 
     @Override public void pause() {}

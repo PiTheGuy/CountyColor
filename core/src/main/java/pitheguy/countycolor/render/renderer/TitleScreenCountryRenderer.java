@@ -49,6 +49,10 @@ public class TitleScreenCountryRenderer implements Disposable {
         fillRenderer.ensureLoadingFinished();
     }
 
+    public void invalidateCache() {
+        cachingHelper.invalidateCache();
+    }
+
     public void dispose() {
         outlineRenderer.dispose();
         fillRenderer.dispose();
