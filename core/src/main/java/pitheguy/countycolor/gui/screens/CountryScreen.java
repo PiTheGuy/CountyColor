@@ -51,7 +51,6 @@ public class CountryScreen implements Screen, InputProcessor {
         transitionHelper = new CameraTransitionHelper(game, camera);
         Viewport viewport = new ScreenViewport(hudCamera);
         stage = new Stage(viewport);
-        InputManager.setInputProcessor(this);
     }
 
     @Override
@@ -134,9 +133,13 @@ public class CountryScreen implements Screen, InputProcessor {
         return renderer.isDoneLoading();
     }
 
+    @Override
+    public void show() {
+        InputManager.setInputProcessor(this);
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public void show() {}
     @Override public void hide() {}
     @Override public boolean keyDown(int keycode) { return false; }
     @Override public boolean keyUp(int keycode) { return false; }
