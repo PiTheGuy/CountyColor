@@ -192,7 +192,10 @@ public class StateScreen implements Screen, InputProcessor {
     @Override public void resume() {}
     @Override public void hide() {}
     @Override public boolean keyDown(int keycode) { return false; }
-    @Override public boolean keyUp(int keycode) { return false; }
+    @Override public boolean keyUp(int keycode) {
+        if (keycode == Input.Keys.F4) System.out.println(getMouseWorldCoords());
+        return false;
+    }
     @Override public boolean keyTyped(char character) { return false; }
     @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
     @Override public boolean touchCancelled(int screenX, int screenY, int pointer, int button) { return false; }

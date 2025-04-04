@@ -39,8 +39,8 @@ public class StateRenderer extends RegionRenderer {
         shapeRenderer.setColor(Color.RED);
         shapeRenderer.rect(-RENDER_SIZE, -RENDER_SIZE, RENDER_SIZE * 2, RENDER_SIZE * 2);
         shapeRenderer.end();
-        if (!useCachedTexture.getAsBoolean()) cachingHelper.invalidateCache();
-        cachingHelper.render(camera, cam -> renderStateInternal(cam, countyData));
+        if (useCachedTexture.getAsBoolean()) cachingHelper.render(camera, cam -> renderStateInternal(cam, countyData));
+        else renderStateInternal(camera, countyData);
     }
 
     private void renderStateInternal(OrthographicCamera camera, CountyData countyData) {
