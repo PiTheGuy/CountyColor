@@ -1,5 +1,6 @@
 package pitheguy.countycolor.render.util;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -10,6 +11,7 @@ import pitheguy.countycolor.render.PolygonCollection;
 
 import java.util.List;
 
+import static pitheguy.countycolor.render.util.RenderConst.OUTLINE_THICKNESS;
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class RenderUtil {
@@ -30,10 +32,10 @@ public class RenderUtil {
 
     public static void drawThickPolyline(ShapeRenderer renderer, List<Vector2> points, float thickness) {
         Vector2 lastV3 = null, lastV4 = null;
-        //FIXME first and last vertex don't get a triangle between them
         for (int i = 0; i < points.size(); i++) {
             Vector2 p1 = points.get(i);
             Vector2 p2 = points.get((i + 1) % points.size());
+            if (p1.equals(p2)) p2 = points.get((i + 2) % points.size());
             Vector2 direction = p2.cpy().sub(p1).nor();
             Vector2 perpendicular = new Vector2(-direction.y, direction.x).scl(thickness / 2f);
 
