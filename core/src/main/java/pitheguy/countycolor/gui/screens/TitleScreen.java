@@ -54,7 +54,13 @@ public class TitleScreen implements Screen {
             }
         });
         table.add(startColoringButton).row();
-        TextButton optionsButton = new TextButton("Options", skin); //TODO implement options screen
+        TextButton optionsButton = new TextButton("Options", skin);
+        optionsButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.setScreen(new OptionsScreen(game, TitleScreen.this));
+            }
+        });
         table.add(optionsButton).row();
         TextButton quitToDesktopButton = new TextButton("Quit to Desktop", skin);
         quitToDesktopButton.addListener(new ClickListener() {

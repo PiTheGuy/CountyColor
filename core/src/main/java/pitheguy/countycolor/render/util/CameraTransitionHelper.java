@@ -4,6 +4,7 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
+import pitheguy.countycolor.options.Options;
 
 public class CameraTransitionHelper {
     public static final float ZOOM_SPEED = 2f;
@@ -21,6 +22,15 @@ public class CameraTransitionHelper {
     }
 
     public void transition(Vector2 targetPos, float targetZoom, Screen targetScreen) {
+        if (Options.REDUCE_MOTION.get()) {
+            if (targetScreen != null) game.setScreen(targetScreen);
+            else {
+                camera.position.set(targetPos.x, targetPos.y, 0);
+                camera.zoom = targetZoom;
+                camera.update();
+            }
+            return;
+        }
         this.targetPos = targetPos;
         this.targetZoom = targetZoom;
         this.targetScreen = targetScreen;

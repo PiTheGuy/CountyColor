@@ -188,10 +188,10 @@
 	"toggle": {
 		"font": "font",
 		"fontColor": "black",
-		"up": "round-gray",
-		"down": "round-dark-gray",
+		"up": "round-white",
+		"down": "round-gray",
 		"over": "round-light-gray",
-		"checked": "round-dark-gray",
+		"checked": "round-gray",
 		"checkedOver": "round-light-gray"
 	},
 	"special": {

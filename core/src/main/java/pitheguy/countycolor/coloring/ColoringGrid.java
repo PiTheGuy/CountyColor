@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.JsonValue;
+import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.Util;
 
@@ -82,10 +83,8 @@ public class ColoringGrid implements Disposable {
         int effectiveBrushSize = (int) (brushSize * RenderConst.COLORING_RESOLUTION);
         int centerX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + RenderConst.COLORING_SIZE / 2f);
         int centerY = (int) (pos.y * RenderConst.COLORING_RESOLUTION + RenderConst.COLORING_SIZE / 2f);
-        pixmapUpdateExecutor.submit(() -> {
-            pixmap.fillCircle(centerX, RenderConst.COLORING_SIZE - centerY, effectiveBrushSize);
-            needsTextureUpdate = true;
-        });
+        if (Options.ASYNC_GRID_UPDATES.get()) pixmapUpdateExecutor.submit(() -> fillPixmapCircle(centerX, centerY, effectiveBrushSize));
+        else fillPixmapCircle(centerX, centerY, effectiveBrushSize);
         int startX = (int) (pos.x * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
         int startY = (int) (pos.y * RenderConst.COLORING_RESOLUTION - effectiveBrushSize);
         int endX = (int) (pos.x * RenderConst.COLORING_RESOLUTION + effectiveBrushSize);
@@ -101,6 +100,11 @@ public class ColoringGrid implements Disposable {
                 }
             }
         }
+    }
+
+    private void fillPixmapCircle(int centerX, int centerY, int effectiveBrushSize) {
+        pixmap.fillCircle(centerX, RenderConst.COLORING_SIZE - centerY, effectiveBrushSize);
+        needsTextureUpdate = true;
     }
 
     public boolean get(int x, int y) {
