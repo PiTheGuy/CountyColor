@@ -29,8 +29,8 @@ public class CountyColor extends Game {
         super.render();
         if (showDebugStats) {
             batch.begin();
-            font.draw(batch, Util.getMemoryUsageString(), 10, 20);
             font.draw(batch, Gdx.graphics.getFramesPerSecond() + " FPS", 10, 40);
+            font.draw(batch, Util.getMemoryUsageString(), 10, 20);
             batch.end();
         }
     }
@@ -51,11 +51,7 @@ public class CountyColor extends Game {
         batch.setProjectionMatrix(camera.combined);
     }
 
-    public static CountyColor getInstance() {
-        return instance;
-    }
-
-    public void toggleDebugStats() {
-        showDebugStats = !showDebugStats;
+    public static void toggleDebugStats() {
+        instance.showDebugStats = !instance.showDebugStats;
     }
 }

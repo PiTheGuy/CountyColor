@@ -16,7 +16,7 @@ public class InputManager {
         @Override
         public boolean keyDown(int keycode) {
             if (keycode == Input.Keys.F3) {
-                CountyColor.getInstance().toggleDebugStats();
+                CountyColor.toggleDebugStats();
                 return true;
             }
             return false;

@@ -13,7 +13,7 @@ import pitheguy.countycolor.options.Option;
 import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.util.InputManager;
 
-public class OptionsScreen implements Screen {
+public class OptionsScreen extends InputAdapter implements Screen {
     private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
     private final Game game;
     private final Screen lastScreen;
@@ -34,14 +34,8 @@ public class OptionsScreen implements Screen {
         root.top();
         Label title = new Label("Options", skin, "title");
         root.add(title).colspan(2).padTop(20).center().row();
-        Label reduceMotionLabel = new Label("Reduce Motion", skin);
-        ToggleButton reduceMotionButton = new OptionToggleButton(skin, Options.REDUCE_MOTION);
-        root.add(reduceMotionLabel).pad(10).center();
-        root.add(reduceMotionButton).pad(10).row();
-        Label asyncGridUpdatesLabel = new Label("Async Grid Updates", skin);
-        ToggleButton asyncGridUpdatesButton = new OptionToggleButton(skin, Options.ASYNC_GRID_UPDATES);
-        root.add(asyncGridUpdatesLabel).pad(10).center();
-        root.add(asyncGridUpdatesButton).pad(10).row();
+        addOption(root, "Reduce Motion", Options.REDUCE_MOTION);
+        addOption(root, "Async Grid Updates", Options.ASYNC_GRID_UPDATES);
         TextButton doneButton = new TextButton("Done", skin);
         doneButton.addListener(new ClickListener() {
             @Override
@@ -54,9 +48,16 @@ public class OptionsScreen implements Screen {
         stage.addActor(root);
     }
 
+    private void addOption(Table root, String text, Option<Boolean> option) {
+        Label label = new Label(text, skin);
+        ToggleButton button = new OptionToggleButton(skin, option);
+        root.add(label).pad(10).center();
+        root.add(button).pad(10).row();
+    }
+
     @Override
     public void show() {
-        InputManager.setInputProcessor(stage);
+        InputManager.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
     @Override
@@ -75,25 +76,24 @@ public class OptionsScreen implements Screen {
     }
 
     @Override
-    public void pause() {
-
-    }
-
-    @Override
-    public void resume() {
-
-    }
-
-    @Override
-    public void hide() {
-
-    }
-
-    @Override
     public void dispose() {
         stage.dispose();
         skin.dispose();
     }
+
+    @Override
+    public boolean keyUp(int keycode) {
+        if (keycode == Input.Keys.ESCAPE) {
+            Options.save();
+            game.setScreen(lastScreen);
+            return true;
+        }
+        return false;
+    }
+
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void hide() {}
 
     private static class OptionToggleButton extends ToggleButton {
         public OptionToggleButton(Skin skin, Option<Boolean> option) {
