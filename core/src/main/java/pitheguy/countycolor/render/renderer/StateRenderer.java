@@ -1,7 +1,8 @@
 package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
@@ -11,8 +12,6 @@ import pitheguy.countycolor.render.util.RenderUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
-
-import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class StateRenderer extends RegionRenderer {
     private static final Map<String, String> STATE_TO_ID = new HashMap<>();

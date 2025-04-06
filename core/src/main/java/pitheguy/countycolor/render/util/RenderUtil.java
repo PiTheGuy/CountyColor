@@ -1,6 +1,5 @@
 package pitheguy.countycolor.render.util;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -11,7 +10,6 @@ import pitheguy.countycolor.render.PolygonCollection;
 
 import java.util.List;
 
-import static pitheguy.countycolor.render.util.RenderConst.OUTLINE_THICKNESS;
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class RenderUtil {

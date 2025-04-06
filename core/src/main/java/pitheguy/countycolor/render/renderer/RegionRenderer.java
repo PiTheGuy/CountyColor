@@ -18,6 +18,8 @@ import static pitheguy.countycolor.render.util.RenderConst.OUTLINE_THICKNESS;
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public abstract class RegionRenderer implements Disposable {
+    private static final ExecutorService SHAPE_LOAD_EXECUTOR = Executors.newCachedThreadPool();
+
     private final Future<Map<String, PolygonCollection>> shapesFuture;
     protected Map<String, PolygonCollection> shapes;
     protected final ShapeRenderer shapeRenderer = new ShapeRenderer();
@@ -70,8 +72,7 @@ public abstract class RegionRenderer implements Disposable {
     }
 
     private Future<Map<String, PolygonCollection>> loadShapesAsync(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        return executor.submit(() -> loadShapes(sourceFilePath, predicate, duplicatePreventionKey));
+        return SHAPE_LOAD_EXECUTOR.submit(() -> loadShapes(sourceFilePath, predicate, duplicatePreventionKey));
     }
 
     protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
