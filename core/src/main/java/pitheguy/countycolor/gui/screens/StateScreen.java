@@ -39,7 +39,7 @@ public class StateScreen implements Screen, InputProcessor {
     private final Stage stage;
     private boolean pendingColorSelection;
     private String pendingCounty;
-    private final InfoTooltip infoTooltip = new InfoTooltip(skin);
+    private final InfoTooltip infoTooltip = new InfoTooltip(skin, true);
     private Texture arrowTexture;
     private Button backButton;
 

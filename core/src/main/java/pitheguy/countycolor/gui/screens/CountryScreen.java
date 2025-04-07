@@ -34,7 +34,7 @@ public class CountryScreen implements Screen, InputProcessor {
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
     private final Stage stage;
-    private final InfoTooltip tooltip = new InfoTooltip(new Skin(Gdx.files.internal("skin/skin.json")));
+    private final InfoTooltip tooltip = new InfoTooltip(new Skin(Gdx.files.internal("skin/skin.json")), true);
     private final Future<Map<String, Integer>> completionCounts = loadCompletionCounts();
     public static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
     static {
