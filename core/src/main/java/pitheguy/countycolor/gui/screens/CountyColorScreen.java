@@ -68,10 +68,10 @@ public class CountyColorScreen implements Screen, InputProcessor {
         camera.zoom = maxZoom;
         camera.update();
         transitionHelper = new CameraTransitionHelper(game, camera);
-        if (load) InputManager.setInputProcessor(new InputMultiplexer(stage, this));
         if (load) {
             ExecutorService executor = Executors.newSingleThreadExecutor();
             coloringGridFuture = executor.submit(this::load);
+            executor.shutdown();
         } else coloringGrid = new ColoringGrid();
         countyRenderer = new CountyRenderer(county, state);
         initStage();
@@ -91,8 +91,8 @@ public class CountyColorScreen implements Screen, InputProcessor {
         });
         stage.addActor(slider);
         backButton = new Button(skin);
-        Texture arrowTexture = new Texture(Gdx.files.internal("icons/menu.png"));
-        backButton.add(new Image(arrowTexture));
+        Texture menuTexture = new Texture(Gdx.files.internal("icons/menu.png"));
+        backButton.add(new Image(menuTexture));
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -124,10 +124,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         countyRenderer.renderHighlight(camera, delta);
         coloringRenderer.render(coloringGrid, camera);
         countyRenderer.renderCounty(camera);
-        cursorRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        cursorRenderer.setColor(canColor() ? coloringGrid.getColor().getColor() : Color.RED);
-        cursorRenderer.circle(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY(), brushSize / camera.zoom);
-        cursorRenderer.end();
+        renderCursor();
         renderProgressBar();
         stage.act(delta);
         stage.draw();
@@ -136,12 +133,14 @@ public class CountyColorScreen implements Screen, InputProcessor {
             saveAsync();
             timeSinceSave = 0;
         }
-        if (getCompletion() == 1) {
-            dirty = true; // Mark dirty to force save
-            saveAsync();
-            inTransition = true;
-            transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()));
-        }
+        checkForCompletion();
+    }
+
+    private void renderCursor() {
+        cursorRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        cursorRenderer.setColor(canColor() ? coloringGrid.getColor().getColor() : Color.RED);
+        cursorRenderer.circle(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY(), brushSize / camera.zoom);
+        cursorRenderer.end();
     }
 
     private void renderProgressBar() {
@@ -158,6 +157,15 @@ public class CountyColorScreen implements Screen, InputProcessor {
         float textHeight = RenderUtil.getTextHeight(font, progressString);
         font.draw(batch, progressString, 100 - textWidth / 2, Gdx.graphics.getHeight() - 8 - textHeight / 2);
         batch.end();
+    }
+
+    private void checkForCompletion() {
+        if (getCompletion() == 1) {
+            dirty = true; // Mark dirty to force save
+            saveAsync();
+            inTransition = true;
+            transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()));
+        }
     }
 
     @Override
