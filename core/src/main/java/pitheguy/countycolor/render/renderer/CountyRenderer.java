@@ -15,8 +15,8 @@ import java.util.*;
 import static pitheguy.countycolor.render.util.RenderConst.*;
 
 public class CountyRenderer extends RegionRenderer {
-
     private final String state;
+    private float highlightTime = 0;
 
     public CountyRenderer(String county, String state) {
         super("metadata/counties.json", properties -> properties.getString("STATEFP").equals(StateRenderer.getIdForState(state)) && properties.getString("Name").equals(county));
@@ -48,9 +48,30 @@ public class CountyRenderer extends RegionRenderer {
         shapeRenderer.end();
     }
 
+    public void renderHighlight(OrthographicCamera camera, float delta) {
+        if (highlightTime > 0) {
+            updateCamera(camera);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            float colorDelta = getDelta();
+            fillSubregion(shapes.keySet().iterator().next(), new Color(1, 1 - colorDelta, 1 - colorDelta, 1));
+            shapeRenderer.end();
+            highlightTime -= delta;
+        }
+    }
+
     @Override
     protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
         if (state.equals("Alaska")) RenderUtil.fixRollover(shapes.get(shapes.keySet().iterator().next()));
+    }
+
+    public void highlightUncoloredAreas() {
+        highlightTime = 1.5f;
+    }
+
+    private float getDelta() {
+        if (highlightTime > 1) return 1 - ((highlightTime - 1) * 2);
+        if (highlightTime > 0.5f) return 1;
+        return highlightTime * 2;
     }
 
     public boolean isCoordinateWithinCounty(Vector2 coordinate) {

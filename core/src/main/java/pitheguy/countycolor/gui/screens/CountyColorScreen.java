@@ -121,6 +121,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
             countyRenderer.renderCountyFilled(camera, 1, coloringGrid.getColor());
             return;
         }
+        countyRenderer.renderHighlight(camera, delta);
         coloringRenderer.render(coloringGrid, camera);
         countyRenderer.renderCounty(camera);
         cursorRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -360,11 +361,13 @@ public class CountyColorScreen implements Screen, InputProcessor {
         return state;
     }
 
-    @Override
-    public boolean keyUp(int keycode) {
+    @Override public boolean keyDown(int keycode) {
         if (keycode == Input.Keys.ESCAPE) {
             saveAsync();
             game.setScreen(new CountyColorMenuScreen(game, CountyColorScreen.this));
+            return true;
+        } else if (keycode == Input.Keys.TAB) {
+            countyRenderer.highlightUncoloredAreas();
             return true;
         }
         return false;
@@ -374,6 +377,6 @@ public class CountyColorScreen implements Screen, InputProcessor {
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-    @Override public boolean keyDown(int keycode) { return false; }
+    @Override public boolean keyUp(int keycode) { return false; }
     @Override public boolean keyTyped(char character) { return false; }
 }
