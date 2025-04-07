@@ -205,13 +205,13 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     @Override
     public boolean scrolled(float amountX, float amountY) {
-        Vector3 mouseWorldBefore = getMouseWorldCoords();
+        Vector2 mouseWorldBefore = RenderUtil.getMouseWorldCoords(camera);
         if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
             float zoomFactor = (amountY < 0) ? 0.9f : 1.1f;
             camera.zoom = MathUtils.clamp(camera.zoom * zoomFactor, 0.1f, maxZoom);
             camera.update();
-            Vector3 mouseWorldAfter = getMouseWorldCoords();
-            Vector3 delta = mouseWorldBefore.sub(mouseWorldAfter);
+            Vector2 mouseWorldAfter = RenderUtil.getMouseWorldCoords(camera);
+            Vector2 delta = mouseWorldBefore.sub(mouseWorldAfter);
             camera.position.add(delta.x, delta.y, 0);
         } else {
             brushSize = MathUtils.clamp(brushSize - amountY, 1, 75);
@@ -220,16 +220,11 @@ public class CountyColorScreen implements Screen, InputProcessor {
         return true;
     }
 
-    private Vector3 getMouseWorldCoords() {
-        return camera.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
-    }
-
     private void applyBrush(Vector3 lastColor) {
-        Vector3 mouse = getMouseWorldCoords();
+        Vector2 mouse = RenderUtil.getMouseWorldCoords(camera);
         Vector2 currentPos = new Vector2(lastColor.x, lastColor.y);
         int steps = brushSize > 30 ? 1 : 5;
-        Vector2 endPos = new Vector2(mouse.x, mouse.y);
-        Vector2 delta = endPos.cpy().sub(currentPos).scl(1f / steps);
+        Vector2 delta = mouse.cpy().sub(currentPos).scl(1f / steps);
         for (int i = 0; i < steps; i++) {
             currentPos.add(delta);
             if (canColor(currentPos)) {
@@ -240,8 +235,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private boolean canColor() {
-        Vector3 mouseWorldVec3 = getMouseWorldCoords();
-        Vector2 center = new Vector2(mouseWorldVec3.x, mouseWorldVec3.y);
+        Vector2 center = RenderUtil.getMouseWorldCoords(camera);
         return canColor(center);
     }
 

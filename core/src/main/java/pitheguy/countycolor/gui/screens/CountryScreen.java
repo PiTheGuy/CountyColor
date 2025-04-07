@@ -16,8 +16,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import pitheguy.countycolor.gui.components.InfoTooltip;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.CountryRenderer;
-import pitheguy.countycolor.render.util.CameraTransitionHelper;
-import pitheguy.countycolor.render.util.RenderConst;
+import pitheguy.countycolor.render.util.*;
 import pitheguy.countycolor.util.InputManager;
 import pitheguy.countycolor.util.Util;
 
@@ -67,16 +66,11 @@ public class CountryScreen implements Screen, InputProcessor {
         transitionHelper.update(delta);
         renderer.renderCountry(camera, completionCounts);
         tooltip.hide();
-        Vector3 mouseWorld = getMouseWorldCoords();
-        String selectedState = renderer.getSubregionAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+        String selectedState = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedState != null && !transitionHelper.isInTransition())
             tooltip.show(stage, selectedState, getCompletionCountString(selectedState));
         stage.act(delta);
         stage.draw();
-    }
-
-    private Vector3 getMouseWorldCoords() {
-        return camera.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
     }
 
     private String getCompletionCountString(String state) {
@@ -88,8 +82,7 @@ public class CountryScreen implements Screen, InputProcessor {
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        Vector3 mouseWorld = getMouseWorldCoords();
-        String selectedState = renderer.getSubregionAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+        String selectedState = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedState == null) return false;
         Zoom zoom = renderer.getTargetZoom(selectedState);
         transitionHelper.transition(zoom.center(), zoom.zoom(), new StateScreen(game, selectedState));

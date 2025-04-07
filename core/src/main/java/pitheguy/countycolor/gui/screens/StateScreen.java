@@ -16,8 +16,7 @@ import pitheguy.countycolor.gui.components.InfoTooltip;
 import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.StateRenderer;
-import pitheguy.countycolor.render.util.CameraTransitionHelper;
-import pitheguy.countycolor.render.util.RenderConst;
+import pitheguy.countycolor.render.util.*;
 import pitheguy.countycolor.util.InputManager;
 import pitheguy.countycolor.util.Util;
 
@@ -74,8 +73,7 @@ public class StateScreen implements Screen, InputProcessor {
         renderer.renderState(camera, countyData);
         infoTooltip.hide();
         if (pendingCounty == null) {
-            Vector3 mouseWorld = getMouseWorldCoords();
-            String hoveringCounty = renderer.getSubregionAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+            String hoveringCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
             if (hoveringCounty != null)
                 infoTooltip.show(stage, hoveringCounty, countyData.get(hoveringCounty).getCompletionString());
         }
@@ -160,14 +158,9 @@ public class StateScreen implements Screen, InputProcessor {
         return colors.isEmpty() ? List.of(MapColor.values()) : colors;
     }
 
-    private Vector3 getMouseWorldCoords() {
-        return camera.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
-    }
-
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        Vector3 mouseWorld = getMouseWorldCoords();
-        String selectedCounty = renderer.getSubregionAtCoords(new Vector2(mouseWorld.x, mouseWorld.y));
+        String selectedCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedCounty == null || countyData.get(selectedCounty).isCompleted()) return false;
         Zoom zoom = renderer.getTargetZoom(selectedCounty);
         resetStage();
@@ -210,10 +203,7 @@ public class StateScreen implements Screen, InputProcessor {
     @Override public void resume() {}
     @Override public void hide() {}
     @Override public boolean keyDown(int keycode) { return false; }
-    @Override public boolean keyUp(int keycode) {
-        if (keycode == Input.Keys.F4) System.out.println(getMouseWorldCoords());
-        return false;
-    }
+    @Override public boolean keyUp(int keycode) { return false; }
     @Override public boolean keyTyped(char character) { return false; }
     @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
     @Override public boolean touchCancelled(int screenX, int screenY, int pointer, int button) { return false; }

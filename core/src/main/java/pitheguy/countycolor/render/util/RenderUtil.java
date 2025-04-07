@@ -134,7 +134,8 @@ public class RenderUtil {
         polygons.recalculateBounds();
     }
 
-    public static Vector3 getMouseWorldCoords(Camera camera) {
-        return camera.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
+    public static Vector2 getMouseWorldCoords(Camera camera) {
+        Vector3 mouseWorld = camera.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
+        return new Vector2(mouseWorld.x, mouseWorld.y);
     }
 }
