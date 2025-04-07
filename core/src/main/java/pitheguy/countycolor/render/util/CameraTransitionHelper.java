@@ -15,15 +15,17 @@ public class CameraTransitionHelper {
     private Vector2 targetPos = null;
     private float targetZoom;
     private Screen targetScreen = null;
+    private boolean dispose;
 
     public CameraTransitionHelper(Game game, OrthographicCamera camera) {
         this.game = game;
         this.camera = camera;
     }
 
-    public void transition(Vector2 targetPos, float targetZoom, Screen targetScreen) {
+    public void transition(Vector2 targetPos, float targetZoom, Screen targetScreen, boolean dispose) {
+        this.dispose = dispose;
         if (Options.REDUCE_MOTION.get()) {
-            if (targetScreen != null) game.setScreen(targetScreen);
+            if (targetScreen != null) setScreen(targetScreen, dispose);
             else {
                 camera.position.set(targetPos.x, targetPos.y, 0);
                 camera.zoom = targetZoom;
@@ -47,7 +49,7 @@ public class CameraTransitionHelper {
         if (diff.len() < 1f && Math.abs(zoomDiff) < 0.01f) {
             camera.zoom = targetZoom;
             camera.position.set(targetPos.x, targetPos.y, 0);
-            if (targetScreen != null) game.setScreen(targetScreen);
+            if (targetScreen != null) setScreen(targetScreen, dispose);
             targetPos = null;
             targetScreen = null;
         }
@@ -61,5 +63,11 @@ public class CameraTransitionHelper {
     public void stopTransition() {
         targetPos = null;
         targetScreen = null;
+    }
+
+    private void setScreen(Screen targetScreen, boolean dispose) {
+        Screen oldScreen = game.getScreen();
+        game.setScreen(targetScreen);
+        if (dispose) oldScreen.dispose();
     }
 }

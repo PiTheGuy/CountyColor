@@ -3,7 +3,6 @@ package pitheguy.countycolor.gui.screens;
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.*;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
@@ -118,7 +117,7 @@ public class StateScreen implements Screen, InputProcessor {
             pendingCounty = null;
             pendingColorSelection = false;
             transitionHelper.stopTransition();
-            transitionHelper.transition(new Vector2(0, 0), targetZoom, null);
+            transitionHelper.transition(new Vector2(0, 0), targetZoom, null, false);
         }
     }
 
@@ -174,9 +173,9 @@ public class StateScreen implements Screen, InputProcessor {
         resetStage();
         if (countyData.get(selectedCounty).isStarted()) {
             CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty, state, true);
-            transitionHelper.transition(zoom.center(), zoom.zoom(), targetScreen);
+            transitionHelper.transition(zoom.center(), zoom.zoom(), targetScreen, false);
         } else {
-            transitionHelper.transition(zoom.center(), zoom.zoom(), null);
+            transitionHelper.transition(zoom.center(), zoom.zoom(), null, false);
             pendingColorSelection = true;
             pendingCounty = selectedCounty;
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
@@ -208,9 +207,13 @@ public class StateScreen implements Screen, InputProcessor {
         InputManager.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
+    @Override
+    public void hide() {
+        dispose();
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public void hide() {}
     @Override public boolean keyDown(int keycode) { return false; }
     @Override public boolean keyUp(int keycode) { return false; }
     @Override public boolean keyTyped(char character) { return false; }

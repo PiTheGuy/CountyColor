@@ -35,6 +35,8 @@ public class CountyColorMenuScreen extends InputAdapter implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.setScreen(new StateScreen(game, lastScreen.getState()));
+                lastScreen.dispose();
+                dispose();
             }
         });
         root.add(returnToStateButton).expandX().center().row();
@@ -54,6 +56,7 @@ public class CountyColorMenuScreen extends InputAdapter implements Screen {
                 public void clicked(InputEvent event, float x, float y) {
                     lastScreen.markAsComplete();
                     game.setScreen(lastScreen);
+                    dispose();
                 }
             });
             root.add(markAsCompleteButton).expandX().center().row();

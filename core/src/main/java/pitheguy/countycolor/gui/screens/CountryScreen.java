@@ -5,8 +5,6 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.JsonReader;
@@ -85,7 +83,7 @@ public class CountryScreen implements Screen, InputProcessor {
         String selectedState = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedState == null) return false;
         Zoom zoom = renderer.getTargetZoom(selectedState);
-        transitionHelper.transition(zoom.center(), zoom.zoom(), new StateScreen(game, selectedState));
+        transitionHelper.transition(zoom.center(), zoom.zoom(), new StateScreen(game, selectedState), false);
         return true;
     }
 

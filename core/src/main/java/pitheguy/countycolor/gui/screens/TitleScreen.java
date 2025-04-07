@@ -46,8 +46,10 @@ public class TitleScreen implements Screen {
         startColoringButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                if (countryScreen.isRendererReady()) game.setScreen(countryScreen);
-                else {
+                if (countryScreen.isRendererReady()) {
+                    game.setScreen(countryScreen);
+                    dispose();
+                } else {
                     startColoringButton.setDisabled(true);
                     startColoringButton.setText("Loading...");
                     awaitingLoad = true;
@@ -92,6 +94,7 @@ public class TitleScreen implements Screen {
         stage.draw();
         if (awaitingLoad && countryScreen.isRendererReady()) {
             game.setScreen(countryScreen);
+            dispose();
         }
     }
 

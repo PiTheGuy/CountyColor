@@ -45,7 +45,6 @@ public class OptionsScreen extends InputAdapter implements Screen {
         doneButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                Options.save();
                 game.setScreen(lastScreen);
             }
         });
@@ -89,7 +88,6 @@ public class OptionsScreen extends InputAdapter implements Screen {
     @Override
     public boolean keyUp(int keycode) {
         if (keycode == Input.Keys.ESCAPE) {
-            Options.save();
             game.setScreen(lastScreen);
             return true;
         }
@@ -98,6 +96,7 @@ public class OptionsScreen extends InputAdapter implements Screen {
 
     @Override public void hide() {
         Options.save();
+        dispose();
     }
 
     @Override public void pause() {}
