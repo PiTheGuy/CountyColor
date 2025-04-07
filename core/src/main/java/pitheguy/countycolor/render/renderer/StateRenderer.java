@@ -1,14 +1,8 @@
 package pitheguy.countycolor.render.renderer;
 
-import clipper2.Clipper;
-import clipper2.core.*;
-import clipper2.engine.Clipper64;
-import clipper2.engine.ClipperD;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.*;
@@ -23,23 +17,34 @@ public class StateRenderer extends RegionRenderer {
         initStateIdMap();
     }
     private final BooleanSupplier useCachedTexture;
+    private final BooleanSupplier renderHoveringCounty;
     private final String state;
     private final RenderCachingHelper cachingHelper;
 
 
-    public StateRenderer(String state, BooleanSupplier useCachedTexture) {
+    public StateRenderer(String state, BooleanSupplier useCachedTexture, BooleanSupplier renderHoveringCounty) {
         super("metadata/counties.json", properties -> properties.getString("STATEFP").equals(STATE_TO_ID.get(state)));
         this.state = state;
         this.useCachedTexture = useCachedTexture;
+        this.renderHoveringCounty = renderHoveringCounty;
         this.cachingHelper = new RenderCachingHelper();
     }
 
     public void renderState(OrthographicCamera camera, CountyData countyData) {
-        Gdx.gl.glClearColor(1, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        renderBackground();
         shapeRenderer.setProjectionMatrix(camera.combined);
         if (useCachedTexture.getAsBoolean()) cachingHelper.render(camera, cam -> renderStateInternal(cam, countyData));
         else renderStateInternal(camera, countyData);
+        if (renderHoveringCounty.getAsBoolean()) {
+            String hoveringCounty = getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            if (hoveringCounty != null && !countyData.get(hoveringCounty).isCompleted()) {
+                fillSubregion(hoveringCounty, new Color(0.95f, 0.95f, 0.95f, 1f));
+                shapeRenderer.setColor(Color.BLACK);
+                renderThickSubregionOutline(hoveringCounty, RenderConst.OUTLINE_THICKNESS * camera.zoom);
+            }
+            shapeRenderer.end();
+        }
     }
 
     private void renderStateInternal(OrthographicCamera camera, CountyData countyData) {

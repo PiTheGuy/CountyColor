@@ -1,8 +1,7 @@
 package pitheguy.countycolor.gui.screens;
 
 import com.badlogic.gdx.*;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.*;
@@ -51,7 +50,7 @@ public class StateScreen implements Screen, InputProcessor {
         camera.update();
         hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         transitionHelper = new CameraTransitionHelper(game, camera);
-        renderer = new StateRenderer(state, () -> camera.zoom == maxZoom);
+        renderer = new StateRenderer(state, () -> camera.zoom == maxZoom, () -> camera.zoom == maxZoom);
         countyDataFuture = CountyData.loadAsync(state);
         Viewport viewport = new ScreenViewport(hudCamera);
         stage = new Stage(viewport);
@@ -77,12 +76,21 @@ public class StateScreen implements Screen, InputProcessor {
             if (hoveringCounty != null)
                 infoTooltip.show(stage, hoveringCounty, countyData.get(hoveringCounty).getCompletionString());
         }
+        updateCursor();
         stage.act(delta);
         stage.draw();
         if (pendingColorSelection && !transitionHelper.isInTransition()) {
             showColorSelection();
             pendingColorSelection = false;
         }
+    }
+
+    private void updateCursor() {
+        if (pendingCounty != null) return;
+        String hoveringCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
+        if (hoveringCounty == null || countyData.get(hoveringCounty).isCompleted())
+            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+        else Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Hand);
     }
 
     private void resetStage() {
@@ -171,6 +179,7 @@ public class StateScreen implements Screen, InputProcessor {
             transitionHelper.transition(zoom.center(), zoom.zoom(), null);
             pendingColorSelection = true;
             pendingCounty = selectedCounty;
+            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
         }
         return true;
     }

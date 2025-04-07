@@ -39,16 +39,8 @@ public abstract class RegionRenderer implements Disposable {
         shapeRenderer.begin(thick ? ShapeRenderer.ShapeType.Filled : ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.BLACK);
         for (String subregion : shapes.keySet()) {
-            PolygonCollection subregionPolygons = shapes.get(subregion);
-            for (List<Vector2> points : subregionPolygons.getPolygons()) {
-                if (thick)
-                    RenderUtil.drawThickPolyline(shapeRenderer, points, scaleThickness ? OUTLINE_THICKNESS * camera.zoom : OUTLINE_THICKNESS);
-                else for (int i = 0; i < points.size() - 1; i++) {
-                    Vector2 point = points.get(i);
-                    Vector2 endPoint = points.get(i + 1);
-                    shapeRenderer.line(point.x * RENDER_SIZE / 2f, point.y * RENDER_SIZE / 2f, endPoint.x * RENDER_SIZE / 2f, endPoint.y * RENDER_SIZE / 2f);
-                }
-            }
+            if (thick) renderThickSubregionOutline(subregion, scaleThickness ? OUTLINE_THICKNESS * camera.zoom : OUTLINE_THICKNESS);
+            else renderSubregionOutline(subregion);
         }
         shapeRenderer.end();
     }
@@ -56,6 +48,23 @@ public abstract class RegionRenderer implements Disposable {
     protected void renderBackground() {
         Gdx.gl.glClearColor(1, 1, 1, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    }
+
+    protected void renderSubregionOutline(String subregion) {
+        PolygonCollection subregionPolygons = shapes.get(subregion);
+        for (List<Vector2> points : subregionPolygons.getPolygons()) {
+            for (int i = 0; i < points.size() - 1; i++) {
+                Vector2 point = points.get(i);
+                Vector2 endPoint = points.get(i + 1);
+                shapeRenderer.line(point.x * RENDER_SIZE / 2f, point.y * RENDER_SIZE / 2f, endPoint.x * RENDER_SIZE / 2f, endPoint.y * RENDER_SIZE / 2f);
+            }
+        }
+    }
+
+    protected void renderThickSubregionOutline(String subregion, float thickness) {
+        PolygonCollection subregionPolygons = shapes.get(subregion);
+        for (List<Vector2> points : subregionPolygons.getPolygons())
+            RenderUtil.drawThickPolyline(shapeRenderer, points, thickness);
     }
 
     protected void fillSubregion(String subregion, Color color) {
