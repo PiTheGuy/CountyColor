@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.gui.components.InfoTooltip;
+import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.StateRenderer;
 import pitheguy.countycolor.render.util.CameraTransitionHelper;
@@ -20,6 +21,8 @@ import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.InputManager;
 import pitheguy.countycolor.util.Util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 
 public class StateScreen implements Screen, InputProcessor {
@@ -116,12 +119,15 @@ public class StateScreen implements Screen, InputProcessor {
     private void showColorSelection() {
         CountyColorScreen nextScreen = new CountyColorScreen(game, pendingCounty, state, false);
         resetStage();
-        Group group = new Group();
+        Table table = new Table();
+        table.setFillParent(true);
         Label label = new Label("Choose a color", skin);
-        label.setPosition(100 - label.getWidth() / 2, 50);
-        group.addActor(label);
-        for (int i = 0; i < 4; i++) {
-            MapColor color = MapColor.values()[i];
+        table.center().add(label).row();
+        List<MapColor> colors = getAvailableColors();
+        Group group = new Group();
+        group.setSize(50 * colors.size(), 50);
+        for (int i = 0; i < colors.size(); i++) {
+            MapColor color = colors.get(i);
             Button.ButtonStyle tintedStyle = new Button.ButtonStyle(skin.get("colored", Button.ButtonStyle.class));
             tintedStyle.up = skin.newDrawable(tintedStyle.up, color.getColor());
             tintedStyle.down = skin.newDrawable(tintedStyle.down, color.getColor());
@@ -138,8 +144,20 @@ public class StateScreen implements Screen, InputProcessor {
             });
             group.addActor(button);
         }
-        group.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f - 50);
-        stage.addActor(group);
+        table.add(group);
+        stage.addActor(table);
+    }
+
+    private List<MapColor> getAvailableColors() {
+        List<MapColor> colors = new ArrayList<>(List.of(MapColor.values()));
+        if (!Options.ENFORCE_MAP_COLORS.get()) return colors;
+        List<String> borderingCounties = renderer.getBorderingCounties(pendingCounty);
+        for (String county : borderingCounties) {
+            CountyData.Entry entry = countyData.get(county);
+            if (!entry.isStarted()) continue;
+            colors.remove(entry.mapColor());
+        }
+        return colors.isEmpty() ? List.of(MapColor.values()) : colors;
     }
 
     private Vector3 getMouseWorldCoords() {

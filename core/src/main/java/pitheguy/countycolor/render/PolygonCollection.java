@@ -1,6 +1,5 @@
 package pitheguy.countycolor.render;
 
-import clipper2.core.*;
 import com.badlogic.gdx.math.Vector2;
 import pitheguy.countycolor.render.util.RenderConst;
 

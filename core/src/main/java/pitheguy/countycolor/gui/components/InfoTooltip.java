@@ -24,7 +24,9 @@ public class InfoTooltip extends Table {
 
     public void show(Stage stage, String title, String text) {
         this.title.setText(title);
+        this.title.setVisible(title != null);
         this.text.setText(text);
+        this.text.setWrap(true);
         pack();
         Vector2 pos = getTooltipPosition();
         setPosition(pos.x, pos.y);

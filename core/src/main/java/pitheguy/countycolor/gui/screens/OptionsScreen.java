@@ -36,6 +36,7 @@ public class OptionsScreen extends InputAdapter implements Screen {
         root.add(title).colspan(2).padTop(20).center().row();
         addOption(root, "Reduce Motion", Options.REDUCE_MOTION);
         addOption(root, "Async Grid Updates", Options.ASYNC_GRID_UPDATES);
+        addOption(root, "Enforce Map Colors", Options.ENFORCE_MAP_COLORS);
         TextButton doneButton = new TextButton("Done", skin);
         doneButton.addListener(new ClickListener() {
             @Override
