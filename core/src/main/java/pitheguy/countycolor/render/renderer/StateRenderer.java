@@ -1,16 +1,19 @@
 package pitheguy.countycolor.render.renderer;
 
+import clipper2.Clipper;
+import clipper2.core.*;
+import clipper2.engine.Clipper64;
+import clipper2.engine.ClipperD;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
-import pitheguy.countycolor.render.util.RenderCachingHelper;
-import pitheguy.countycolor.render.util.RenderUtil;
+import pitheguy.countycolor.render.util.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BooleanSupplier;
 
 public class StateRenderer extends RegionRenderer {
@@ -53,6 +56,17 @@ public class StateRenderer extends RegionRenderer {
 
     public void invalidateCache() {
         cachingHelper.invalidateCache();
+    }
+
+    public List<String> getBorderingCounties(String county) {
+        PolygonCollection polygons = shapes.get(county);
+        List<String> borderingCounties = new ArrayList<>();
+        for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
+            if (entry.getKey().equals(county)) continue;
+            PolygonCollection other = entry.getValue();
+            if (polygons.isAdjacentTo(other)) borderingCounties.add(entry.getKey());
+        }
+        return borderingCounties;
     }
 
     private static void initStateIdMap() {

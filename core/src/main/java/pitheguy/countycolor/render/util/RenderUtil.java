@@ -1,10 +1,11 @@
 package pitheguy.countycolor.render.util;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.EarClippingTriangulator;
-import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.utils.ShortArray;
 import pitheguy.countycolor.render.PolygonCollection;
 
@@ -131,5 +132,9 @@ public class RenderUtil {
             for (Vector2 point : points)
                 if (point.x > 0) point.add(-360, 0);
         polygons.recalculateBounds();
+    }
+
+    public static Vector3 getMouseWorldCoords(Camera camera) {
+        return camera.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
     }
 }

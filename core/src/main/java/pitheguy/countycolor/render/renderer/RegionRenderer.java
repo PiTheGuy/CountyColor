@@ -102,8 +102,7 @@ public abstract class RegionRenderer implements Disposable {
         List<JsonValue> shapesJson;
         switch (type) {
             case "Polygon":
-                shapesJson = new ArrayList<>();
-                shapesJson.add(coordinates);
+                shapesJson = List.of(coordinates);
                 break;
             case "MultiPolygon":
                 List<JsonValue> polys = new ArrayList<>();

@@ -1,5 +1,6 @@
 package pitheguy.countycolor.render;
 
+import clipper2.core.*;
 import com.badlogic.gdx.math.Vector2;
 import pitheguy.countycolor.render.util.RenderConst;
 
@@ -46,4 +47,24 @@ public class PolygonCollection {
         maxX = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.x).max().getAsDouble();
         maxY = (float) polygons.stream().flatMap(Collection::stream).mapToDouble(v -> v.y).max().getAsDouble();
     }
+
+    public boolean boundingBoxOverlaps(PolygonCollection other) {
+        return minX <= other.maxX &&
+               maxX >= other.minX &&
+               minY <= other.maxY &&
+               maxY >= other.minY;
+    }
+
+    public boolean isAdjacentTo(PolygonCollection other) {
+        if (!boundingBoxOverlaps(other)) return false;
+        for (List<Vector2> points : polygons) {
+            Polygon polygon = new Polygon(points);
+            for (List<Vector2> otherPoints : other.polygons) {
+                Polygon otherPolygon = new Polygon(otherPoints);
+                if (polygon.isAdjacentTo(otherPolygon)) return true;
+            }
+        }
+        return false;
+    }
+
 }
