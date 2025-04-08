@@ -169,6 +169,7 @@ public class StateScreen implements Screen, InputProcessor {
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
         String selectedCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedCounty == null || countyData.get(selectedCounty).isCompleted()) return false;
+        if (selectedCounty.equals(pendingCounty)) return false;
         Zoom zoom = renderer.getTargetZoom(selectedCounty);
         resetStage();
         if (countyData.get(selectedCounty).isStarted()) {

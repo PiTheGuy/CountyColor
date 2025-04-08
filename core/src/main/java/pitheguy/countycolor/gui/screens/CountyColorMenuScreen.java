@@ -83,7 +83,7 @@ public class CountyColorMenuScreen extends InputAdapter implements Screen {
     }
 
     @Override
-    public boolean keyUp(int keycode) {
+    public boolean keyDown(int keycode) {
         if (keycode == Input.Keys.ESCAPE) {
             game.setScreen(lastScreen);
             return true;

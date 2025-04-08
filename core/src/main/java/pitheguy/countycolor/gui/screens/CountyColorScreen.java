@@ -152,7 +152,8 @@ public class CountyColorScreen implements Screen, InputProcessor {
         progressBarRenderer.rect(50, Gdx.graphics.getHeight() - 35, getCompletion() * 100, 30);
         progressBarRenderer.end();
         batch.begin();
-        String progressString = String.format("%.2f%%", getCompletion() * 100);
+
+        String progressString = String.format("%.2f%%", Math.floor(getCompletion() * 10000) / 100);
         float textWidth = RenderUtil.getTextWidth(font, progressString);
         float textHeight = RenderUtil.getTextHeight(font, progressString);
         font.draw(batch, progressString, 100 - textWidth / 2, Gdx.graphics.getHeight() - 8 - textHeight / 2);
