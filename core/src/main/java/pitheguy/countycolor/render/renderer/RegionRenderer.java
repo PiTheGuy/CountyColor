@@ -39,6 +39,7 @@ public abstract class RegionRenderer implements Disposable {
         shapeRenderer.begin(thick ? ShapeRenderer.ShapeType.Filled : ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.BLACK);
         for (String subregion : shapes.keySet()) {
+            if (!shapes.get(subregion).isVisibleToCamera(camera)) continue;
             if (thick) renderThickSubregionOutline(subregion, scaleThickness ? OUTLINE_THICKNESS * camera.zoom : OUTLINE_THICKNESS);
             else renderSubregionOutline(subregion);
         }

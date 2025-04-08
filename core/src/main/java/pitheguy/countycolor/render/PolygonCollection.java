@@ -1,10 +1,12 @@
 package pitheguy.countycolor.render;
 
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
-import pitheguy.countycolor.render.util.RenderConst;
 
 import java.util.Collection;
 import java.util.List;
+
+import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class PolygonCollection {
     private final List<List<Vector2>> polygons;
@@ -36,7 +38,7 @@ public class PolygonCollection {
     }
 
     public boolean boundsCheck(Vector2 point) {
-        Vector2 scaled = point.cpy().scl(2f / RenderConst.RENDER_SIZE);
+        Vector2 scaled = point.cpy().scl(2f / RENDER_SIZE);
         return scaled.x > minX && scaled.x < maxX && scaled.y > minY && scaled.y < maxY;
     }
 
@@ -64,6 +66,16 @@ public class PolygonCollection {
             }
         }
         return false;
+    }
+
+    public boolean isVisibleToCamera(OrthographicCamera camera) {
+        float camMinX = camera.position.x - (camera.viewportWidth * camera.zoom) / 2f;
+        float camMaxX = camera.position.x + (camera.viewportWidth * camera.zoom) / 2f;
+        float camMinY = camera.position.y - (camera.viewportHeight * camera.zoom) / 2f;
+        float camMaxY = camera.position.y + (camera.viewportHeight * camera.zoom) / 2f;
+
+        return maxX * RENDER_SIZE / 2 >= camMinX && minX * RENDER_SIZE / 2 <= camMaxX &&
+               maxY * RENDER_SIZE / 2 >= camMinY && minY * RENDER_SIZE / 2 <= camMaxY;
     }
 
 }
