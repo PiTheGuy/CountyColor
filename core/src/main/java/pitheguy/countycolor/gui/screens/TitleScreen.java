@@ -22,7 +22,6 @@ public class TitleScreen implements Screen {
     private final OrthographicCamera hudCamera;
     private final CountryScreen countryScreen;
     private boolean awaitingLoad = false;
-    private Table table;
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
 
@@ -39,9 +38,10 @@ public class TitleScreen implements Screen {
     }
 
     private void initStage() {
-        table = new Table(skin);
+        Table mainTable = new Table(skin);
+        mainTable.setFillParent(true);
         Label title = new Label("CountyColor", skin, "title");
-        table.add(title).row();
+        mainTable.center().add(title).row();
         TextButton startColoringButton = new TextButton("Start Coloring", skin);
         startColoringButton.addListener(new ClickListener() {
             @Override
@@ -56,7 +56,7 @@ public class TitleScreen implements Screen {
                 }
             }
         });
-        table.add(startColoringButton).row();
+        mainTable.add(startColoringButton).row();
         TextButton optionsButton = new TextButton("Options", skin);
         optionsButton.addListener(new ClickListener() {
             @Override
@@ -64,7 +64,7 @@ public class TitleScreen implements Screen {
                 game.setScreen(new OptionsScreen(game, TitleScreen.this));
             }
         });
-        table.add(optionsButton).row();
+        mainTable.add(optionsButton).row();
         TextButton quitToDesktopButton = new TextButton("Quit to Desktop", skin);
         quitToDesktopButton.addListener(new ClickListener() {
             @Override
@@ -72,9 +72,12 @@ public class TitleScreen implements Screen {
                 Gdx.app.exit();
             }
         });
-        table.add(quitToDesktopButton).row();
-        table.setPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
-        stage.addActor(table);
+        mainTable.add(quitToDesktopButton).row();
+        Table footerTable = new Table(skin);
+        footerTable.setFillParent(true);
+        footerTable.bottom().right().add(new Label("Created by PiTheGuy", skin)).pad(10);
+        stage.addActor(mainTable);
+        stage.addActor(footerTable);
     }
 
     @Override
@@ -126,7 +129,6 @@ public class TitleScreen implements Screen {
         hudCamera.setToOrtho(false, width, height);
         hudCamera.update();
         stage.getViewport().update(width, height, true);
-        table.setPosition(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
         renderer.invalidateCache();
     }
 

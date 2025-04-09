@@ -53,7 +53,7 @@ public class StateRenderer extends RegionRenderer {
         renderBackground();
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         for (String county : shapes.keySet())
-            if (countyData.get(county).isCompleted())
+            if (shapes.get(county).isVisibleToCamera(camera) && countyData.get(county).isCompleted())
                 fillSubregion(county, countyData.get(county).mapColor().getColor());
         shapeRenderer.end();
         renderRegion(camera, true, true);
