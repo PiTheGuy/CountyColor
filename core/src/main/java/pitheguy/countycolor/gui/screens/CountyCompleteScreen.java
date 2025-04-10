@@ -37,7 +37,7 @@ public class CountyCompleteScreen implements Screen {
             }
         });
         stage.addActor(button);
-        Label title = new Label("County Complete", skin, "title");
+        Label title = new Label((countyRenderer.isIndependentCity() ? "Independent City" : "County") + " Complete", skin, "title");
         title.setPosition(Gdx.graphics.getWidth() / 2f - title.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight());
         stage.addActor(title);
         Label countyName = new Label(getCountyName(county) + ", " + state, skin);
@@ -46,8 +46,8 @@ public class CountyCompleteScreen implements Screen {
     }
 
     private String getCountyName(String county) {
-        if (county.endsWith(" (City)")) return county.substring(0, county.length() - " (City)".length());
-        else return county + " County";
+        if (county.endsWith(" (City)")) county = county.substring(0, county.length() - " (City)".length());
+        return countyRenderer.isIndependentCity() ? county : county + " County";
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
@@ -17,6 +18,7 @@ import static pitheguy.countycolor.render.util.RenderConst.*;
 public class CountyRenderer extends RegionRenderer {
     private final String state;
     private float highlightTime = 0;
+    private boolean isIndependentCity;
 
     public CountyRenderer(String county, String state) {
         super("metadata/counties.json", properties -> properties.getString("STATEFP").equals(StateRenderer.getIdForState(state)) && properties.getString("Name").equals(county));
@@ -76,6 +78,16 @@ public class CountyRenderer extends RegionRenderer {
 
     public boolean isCoordinateWithinCounty(Vector2 coordinate) {
         return getSubregionAtCoords(coordinate) != null;
+    }
+
+    @Override
+    protected void postProcessJson(JsonValue json) {
+        JsonValue properties = json.get("properties");
+        if (Integer.parseInt(properties.getString("COUNTYFP")) > 500) isIndependentCity = true;
+    }
+
+    public boolean isIndependentCity() {
+        return isIndependentCity;
     }
 
     public int computeTotalGridSquares() {

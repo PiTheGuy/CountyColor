@@ -97,10 +97,13 @@ public abstract class RegionRenderer implements Disposable {
             String duplicatePrevention = duplicatePreventionKey == null ? "" : properties.getString(duplicatePreventionKey);
             PolygonCollection polygons = loadSubregion(subregion);
             shapes.put(subregionName + duplicatePrevention, polygons);
+            postProcessJson(subregion);
         }
         postProcessShapes(shapes);
         return relativize(shapes);
     }
+
+    protected void postProcessJson(JsonValue json) {}
 
     protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
     }

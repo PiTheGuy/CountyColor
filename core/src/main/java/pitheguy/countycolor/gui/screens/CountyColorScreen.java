@@ -322,9 +322,9 @@ public class CountyColorScreen implements Screen, InputProcessor {
         FileHandle handle = Gdx.files.local("data/completed_counties.json");
         JsonReader reader = new JsonReader();
         JsonValue root = handle.exists() ? reader.parse(handle) : new JsonValue(JsonValue.ValueType.object);
-        JsonValue state = root.has("state") ? root.get("state") : new JsonValue(JsonValue.ValueType.object);
+        JsonValue state = root.has(this.state) ? root.get(this.state) : new JsonValue(JsonValue.ValueType.object);
         state.addChild(county, new JsonValue(coloringGrid.getColor().getSerializedName()));
-        if (!root.has("state")) root.addChild("state", state);
+        if (!root.has(this.state)) root.addChild(this.state, state);
         handle.writeString(root.toJson(JsonWriter.OutputType.json), false);
     }
 
