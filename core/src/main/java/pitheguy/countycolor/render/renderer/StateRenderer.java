@@ -1,19 +1,17 @@
 package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.JsonReader;
-import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.*;
 
 import java.util.*;
 import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
 
-public class StateRenderer extends RegionRenderer {
+public class StateRenderer extends CountyLevelRenderer {
     private static final Map<String, String> STATE_TO_ID = new HashMap<>();
     private static final Map<String, String> ID_TO_STATE = new HashMap<>();
     static {
@@ -23,7 +21,6 @@ public class StateRenderer extends RegionRenderer {
     private final BooleanSupplier renderHoveringCounty;
     private final String state;
     private final RenderCachingHelper cachingHelper;
-    private final List<String> independentCities = new ArrayList<>();
 
 
     public StateRenderer(String state, BooleanSupplier useCachedTexture, BooleanSupplier renderHoveringCounty) {
@@ -41,13 +38,14 @@ public class StateRenderer extends RegionRenderer {
         else renderStateInternal(camera, countyData);
         if (renderHoveringCounty.getAsBoolean()) {
             String hoveringCounty = getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             if (hoveringCounty != null && !countyData.get(hoveringCounty).isCompleted()) {
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
                 fillSubregion(hoveringCounty, new Color(0.95f, 0.95f, 0.95f, 1f));
                 shapeRenderer.setColor(Color.BLACK);
                 renderThickSubregionOutline(hoveringCounty, RenderConst.OUTLINE_THICKNESS * camera.zoom);
+                shapeRenderer.end();
+                renderIndependentCities(camera, true, true, name -> !name.equals(hoveringCounty) && shapes.get(name).boundingBoxOverlaps(shapes.get(hoveringCounty)));
             }
-            shapeRenderer.end();
         }
     }
 
@@ -96,18 +94,8 @@ public class StateRenderer extends RegionRenderer {
     }
 
     @Override
-    protected void postProcessJson(JsonValue json) {
-        JsonValue properties = json.get("properties");
-        if (Integer.parseInt(properties.getString("COUNTYFP")) > 500) independentCities.add(properties.getString("NAME"));
-    }
-
-    @Override
     protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
         if (state.equals("Alaska")) for (PolygonCollection polygons : shapes.values()) RenderUtil.fixRollover(polygons);
-    }
-
-    public boolean isIndependentCity(String name) {
-        return independentCities.contains(name);
     }
 
     public void dispose() {

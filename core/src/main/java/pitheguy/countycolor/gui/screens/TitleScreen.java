@@ -83,7 +83,6 @@ public class TitleScreen implements Screen {
     @Override
     public void show() {
         InputManager.setInputProcessor(stage);
-
     }
 
     @Override

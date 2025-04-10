@@ -15,10 +15,9 @@ import java.util.*;
 
 import static pitheguy.countycolor.render.util.RenderConst.*;
 
-public class CountyRenderer extends RegionRenderer {
+public class CountyRenderer extends CountyLevelRenderer {
     private final String state;
     private float highlightTime = 0;
-    private boolean isIndependentCity;
 
     public CountyRenderer(String county, String state) {
         super("metadata/counties.json", properties -> properties.getString("STATEFP").equals(StateRenderer.getIdForState(state)) && properties.getString("Name").equals(county));
@@ -80,14 +79,8 @@ public class CountyRenderer extends RegionRenderer {
         return getSubregionAtCoords(coordinate) != null;
     }
 
-    @Override
-    protected void postProcessJson(JsonValue json) {
-        JsonValue properties = json.get("properties");
-        if (Integer.parseInt(properties.getString("COUNTYFP")) > 500) isIndependentCity = true;
-    }
-
     public boolean isIndependentCity() {
-        return isIndependentCity;
+        return isIndependentCity(shapes.keySet().iterator().next());
     }
 
     public int computeTotalGridSquares() {
