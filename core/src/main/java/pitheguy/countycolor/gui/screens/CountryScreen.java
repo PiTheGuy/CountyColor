@@ -2,6 +2,7 @@ package pitheguy.countycolor.gui.screens;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -34,9 +35,11 @@ public class CountryScreen implements Screen, InputProcessor {
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
     private final Stage stage;
+    private float startZoom;
     private final InfoTooltip tooltip = new InfoTooltip(new Skin(Gdx.files.internal("skin/skin.json")), true);
     private final Future<Map<String, Map<String, MapColor>>> completedCounties = loadCompletedCounties();
     public static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
+
     static {
         loadCountyCounts();
     }
@@ -44,7 +47,7 @@ public class CountryScreen implements Screen, InputProcessor {
     public CountryScreen(Game game) {
         this.game = game;
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        float startZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
+        startZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
         camera.zoom = startZoom;
         camera.update();
         hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -67,6 +70,8 @@ public class CountryScreen implements Screen, InputProcessor {
 
     @Override
     public void render(float delta) {
+        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         transitionHelper.update(delta);
         completedCountiesRenderer.render(camera, completedCounties);
         renderer.renderCountry(camera);
@@ -90,7 +95,7 @@ public class CountryScreen implements Screen, InputProcessor {
         String selectedState = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedState == null) return false;
         Zoom zoom = renderer.getTargetZoom(selectedState);
-        transitionHelper.transition(zoom.center(), zoom.zoom(), new StateScreen(game, selectedState), false);
+        transitionHelper.transition(zoom.center(), zoom.zoom(), new StateScreen(game, selectedState, this), false);
         return true;
     }
 
@@ -98,7 +103,8 @@ public class CountryScreen implements Screen, InputProcessor {
     public void resize(int width, int height) {
         camera.viewportWidth = width;
         camera.viewportHeight = height;
-        camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
+        startZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
+        camera.zoom = startZoom;
         camera.update();
         hudCamera.setToOrtho(false, width, height);
         hudCamera.update();
@@ -139,17 +145,15 @@ public class CountryScreen implements Screen, InputProcessor {
     @Override
     public void show() {
         InputManager.setInputProcessor(this);
+        camera.zoom = startZoom;
+        camera.position.set(0, 0, 0);
+        camera.update();
     }
 
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-    @Override public boolean keyDown(int keycode) {
-        if (keycode == Input.Keys.F4) {
-            System.out.println(RenderUtil.getMouseWorldCoords(camera));
-        }
-        return false;
-    }
+    @Override public boolean keyDown(int keycode) { return false; }
     @Override public boolean keyUp(int keycode) { return false; }
     @Override public boolean keyTyped(char character) { return false; }
     @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }

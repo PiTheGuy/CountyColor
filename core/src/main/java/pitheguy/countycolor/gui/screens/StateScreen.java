@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 public class StateScreen implements Screen, InputProcessor {
     private final Game game;
     private final String state;
+    private final CountryScreen countryScreen;
     private final OrthographicCamera camera;
     private final OrthographicCamera hudCamera;
     private final StateRenderer renderer;
@@ -41,8 +42,13 @@ public class StateScreen implements Screen, InputProcessor {
     private Button backButton;
 
     public StateScreen(Game game, String state) {
+        this(game, state, new CountryScreen(game));
+    }
+
+    public StateScreen(Game game, String state, CountryScreen countryScreen) {
         this.game = game;
         this.state = state;
+        this.countryScreen = countryScreen;
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.zoom = maxZoom;
@@ -114,7 +120,7 @@ public class StateScreen implements Screen, InputProcessor {
     }
 
     private void goBack() {
-        if (pendingCounty == null) game.setScreen(new CountryScreen(game));
+        if (pendingCounty == null) game.setScreen(countryScreen);
         else {
             float targetZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
             resetStage();
