@@ -18,7 +18,7 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 public class CountryRenderer extends RegionRenderer {
-    private static final List<String> FILTERED_STATES = List.of(
+    public static final List<String> FILTERED_STATES = List.of(
         "Guam",
         "Puerto Rico",
         "American Samoa",
@@ -33,20 +33,9 @@ public class CountryRenderer extends RegionRenderer {
         super("metadata/states.geojson", properties -> !FILTERED_STATES.contains(properties.getString("NAME")));
     }
 
-    public void renderCountry(OrthographicCamera camera, Future<Map<String, Integer>> completionCounts) {
+    public void renderCountry(OrthographicCamera camera) {
         ensureLoadingFinished();
         updateCamera(camera);
-        renderBackground();
-        List<String> completedStates = new ArrayList<>();
-        for (String state : shapes.keySet()) {
-            boolean completed = completionCounts.isDone() && Objects.equals(Util.getFutureValue(completionCounts).getOrDefault(state, 0), CountryScreen.COUNTY_COUNTS.get(state));
-            if (completed) completedStates.add(state);
-        }
-        if (!completedStates.isEmpty()) {
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            for (String stateName : completedStates) fillSubregion(stateName, Color.GREEN);
-            shapeRenderer.end();
-        }
         renderRegion(camera, false, true);
     }
 

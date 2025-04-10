@@ -13,12 +13,14 @@ import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 public class RenderCachingHelper implements Disposable {
     private TextureRegion cachedTexture;
     private FrameBuffer frameBuffer;
-    private Batch batch = new SpriteBatch();
-
-    public RenderCachingHelper() {
-    }
+    private final Batch batch = new SpriteBatch();
+    private float cachedZoom = -1f;
+    private float cachedViewportWidth = -1f;
+    private float cachedViewportHeight = -1f;
 
     public void render(OrthographicCamera camera, Consumer<OrthographicCamera> renderer) {
+        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.setProjectionMatrix(camera.combined);
         if (useCachedTexture()) {
             if (cachedTexture == null) {
@@ -31,11 +33,17 @@ public class RenderCachingHelper implements Disposable {
                 cachedTexture.flip(false, true);
                 frameBuffer.end();
                 pixmap.dispose();
+
+                cachedZoom = camera.zoom;
+                cachedViewportWidth = camera.viewportWidth;
+                cachedViewportHeight = camera.viewportHeight;
             }
             batch.begin();
-            float renderWidth = RENDER_SIZE * ((float) Gdx.graphics.getWidth() / Gdx.graphics.getHeight());
-            batch.draw(cachedTexture, -renderWidth / 2f, -RENDER_SIZE / 2f, renderWidth, RENDER_SIZE);
+            float worldWidth = cachedViewportWidth * cachedZoom;
+            float worldHeight = cachedViewportHeight * cachedZoom;
+            batch.draw(cachedTexture, -worldWidth / 2f, -worldHeight / 2f, worldWidth, worldHeight);
             batch.end();
+
         } else renderer.accept(camera);
     }
 

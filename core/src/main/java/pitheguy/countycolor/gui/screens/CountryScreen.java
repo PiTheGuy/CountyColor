@@ -11,8 +11,10 @@ import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.gui.components.InfoTooltip;
 import pitheguy.countycolor.render.Zoom;
+import pitheguy.countycolor.render.renderer.CountryCompletedCountiesRenderer;
 import pitheguy.countycolor.render.renderer.CountryRenderer;
 import pitheguy.countycolor.render.util.*;
 import pitheguy.countycolor.util.InputManager;
@@ -27,12 +29,13 @@ public class CountryScreen implements Screen, InputProcessor {
     private final OrthographicCamera camera;
     private final OrthographicCamera hudCamera;
     private final CountryRenderer renderer;
+    private final CountryCompletedCountiesRenderer completedCountiesRenderer;
     private final CameraTransitionHelper transitionHelper;
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
     private final Stage stage;
     private final InfoTooltip tooltip = new InfoTooltip(new Skin(Gdx.files.internal("skin/skin.json")), true);
-    private final Future<Map<String, Integer>> completionCounts = loadCompletionCounts();
+    private final Future<Map<String, Map<String, MapColor>>> completedCounties = loadCompletedCounties();
     public static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
     static {
         loadCountyCounts();
@@ -41,11 +44,13 @@ public class CountryScreen implements Screen, InputProcessor {
     public CountryScreen(Game game) {
         this.game = game;
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
+        float startZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
+        camera.zoom = startZoom;
         camera.update();
         hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         renderer = new CountryRenderer();
         transitionHelper = new CameraTransitionHelper(game, camera);
+        completedCountiesRenderer = new CountryCompletedCountiesRenderer(() -> camera.zoom > startZoom / 2);
         Viewport viewport = new ScreenViewport(hudCamera);
         stage = new Stage(viewport);
     }
@@ -53,6 +58,7 @@ public class CountryScreen implements Screen, InputProcessor {
     @Override
     public void dispose() {
         renderer.dispose();
+        completedCountiesRenderer.dispose();
         font.dispose();
         batch.dispose();
         stage.dispose();
@@ -62,7 +68,8 @@ public class CountryScreen implements Screen, InputProcessor {
     @Override
     public void render(float delta) {
         transitionHelper.update(delta);
-        renderer.renderCountry(camera, completionCounts);
+        completedCountiesRenderer.render(camera, completedCounties);
+        renderer.renderCountry(camera);
         tooltip.hide();
         String selectedState = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedState != null && !transitionHelper.isInTransition())
@@ -72,8 +79,8 @@ public class CountryScreen implements Screen, InputProcessor {
     }
 
     private String getCompletionCountString(String state) {
-        if (!completionCounts.isDone()) return "Loading...";
-        int completed = Util.getFutureValue(completionCounts).getOrDefault(state, 0);
+        if (!completedCounties.isDone()) return "Loading...";
+        int completed = Util.getFutureValue(completedCounties).getOrDefault(state, Map.of()).size();
         int total = COUNTY_COUNTS.get(state);
         return String.format("%d / %d Counties Completed", completed, total);
     }
@@ -96,6 +103,7 @@ public class CountryScreen implements Screen, InputProcessor {
         hudCamera.setToOrtho(false, width, height);
         hudCamera.update();
         stage.getViewport().update(width, height, true);
+        completedCountiesRenderer.invalidateCache();
     }
 
     private static void loadCountyCounts() {
@@ -106,22 +114,26 @@ public class CountryScreen implements Screen, InputProcessor {
         }
     }
 
-    private Future<Map<String, Integer>> loadCompletionCounts() {
+    private Future<Map<String, Map<String, MapColor>>> loadCompletedCounties() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         return executor.submit(() -> {
-            FileHandle handle = Gdx.files.internal("data/completion_counts.json");
+            FileHandle handle = Gdx.files.internal("data/completed_counties.json");
             if (!handle.exists()) return Map.of();
             JsonReader reader = new JsonReader();
             JsonValue root = reader.parse(handle);
-            Map<String, Integer> completionCounts = new HashMap<>();
-            for (JsonValue state = root.child; state != null; state = state.next)
-                completionCounts.put(state.name, state.asInt());
+            Map<String, Map<String, MapColor>> completionCounts = new HashMap<>();
+            for (JsonValue state = root.child; state != null; state = state.next) {
+                Map<String, MapColor> map = new HashMap<>();
+                for (JsonValue county = state.child; county != null; county = county.next)
+                    map.put(county.name, MapColor.fromSerializedName(county.asString()));
+                completionCounts.put(state.name, map);
+            }
             return completionCounts;
         });
     }
 
     public boolean isRendererReady() {
-        return renderer.isDoneLoading();
+        return renderer.isDoneLoading() && completedCountiesRenderer.isDoneLoading();
     }
 
     @Override
@@ -132,7 +144,12 @@ public class CountryScreen implements Screen, InputProcessor {
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-    @Override public boolean keyDown(int keycode) { return false; }
+    @Override public boolean keyDown(int keycode) {
+        if (keycode == Input.Keys.F4) {
+            System.out.println(RenderUtil.getMouseWorldCoords(camera));
+        }
+        return false;
+    }
     @Override public boolean keyUp(int keycode) { return false; }
     @Override public boolean keyTyped(char character) { return false; }
     @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }

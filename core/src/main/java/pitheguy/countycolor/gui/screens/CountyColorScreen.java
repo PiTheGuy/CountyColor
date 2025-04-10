@@ -133,7 +133,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
             saveAsync();
             timeSinceSave = 0;
         }
-        checkForCompletion();
+        if (getCompletion() == 1) onCountyCompleted();
     }
 
     private void renderCursor() {
@@ -160,13 +160,12 @@ public class CountyColorScreen implements Screen, InputProcessor {
         batch.end();
     }
 
-    private void checkForCompletion() {
-        if (getCompletion() == 1) {
-            dirty = true; // Mark dirty to force save
-            saveAsync();
-            inTransition = true;
-            transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()), false);
-        }
+    private void onCountyCompleted() {
+        dirty = true; // Mark dirty to force save
+        saveAsync();
+        addCountyToCompletionFile();
+        inTransition = true;
+        transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()), false);
     }
 
     @Override
@@ -317,16 +316,15 @@ public class CountyColorScreen implements Screen, InputProcessor {
         }
         countyJson.addChild("completion", new JsonValue(getCompletion()));
         dataHandle.writeString(root.toJson(JsonWriter.OutputType.json), false);
-        if (getCompletion() == 1) incrementSavedCompletionCount();
     }
 
-    private void incrementSavedCompletionCount() {
-        FileHandle handle = Gdx.files.local("data/completion_counts.json");
+    private void addCountyToCompletionFile() {
+        FileHandle handle = Gdx.files.local("data/completed_counties.json");
         JsonReader reader = new JsonReader();
         JsonValue root = handle.exists() ? reader.parse(handle) : new JsonValue(JsonValue.ValueType.object);
-        int currentCount = root.getInt(state, 0);
-        if (root.has(state)) root.remove(state);
-        root.addChild(state, new JsonValue(currentCount + 1));
+        JsonValue state = root.has("state") ? root.get("state") : new JsonValue(JsonValue.ValueType.object);
+        state.addChild(county, new JsonValue(coloringGrid.getColor().getSerializedName()));
+        if (!root.has("state")) root.addChild("state", state);
         handle.writeString(root.toJson(JsonWriter.OutputType.json), false);
     }
 
