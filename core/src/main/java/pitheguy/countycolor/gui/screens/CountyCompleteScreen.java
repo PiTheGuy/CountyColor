@@ -40,9 +40,14 @@ public class CountyCompleteScreen implements Screen {
         Label title = new Label("County Complete", skin, "title");
         title.setPosition(Gdx.graphics.getWidth() / 2f - title.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight());
         stage.addActor(title);
-        Label countyName = new Label(county + " County, " + state, skin);
+        Label countyName = new Label(getCountyName(county) + ", " + state, skin);
         countyName.setPosition(Gdx.graphics.getWidth() / 2f - countyName.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight() - countyName.getHeight());
         stage.addActor(countyName);
+    }
+
+    private String getCountyName(String county) {
+        if (county.endsWith(" (City)")) return county.substring(0, county.length() - " (City)".length());
+        else return county + " County";
     }
 
     @Override
