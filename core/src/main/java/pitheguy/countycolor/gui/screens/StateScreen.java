@@ -120,8 +120,10 @@ public class StateScreen implements Screen, InputProcessor {
     }
 
     private void goBack() {
-        if (pendingCounty == null) game.setScreen(countryScreen);
-        else {
+        if (pendingCounty == null) {
+            countryScreen.zoomOutFromState(state);
+            game.setScreen(countryScreen);
+        } else {
             float targetZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
             resetStage();
             pendingCounty = null;

@@ -14,8 +14,7 @@ public class CameraTransitionHelper {
     private final OrthographicCamera camera;
     private Vector2 targetPos = null;
     private float targetZoom;
-    private Screen targetScreen = null;
-    private boolean dispose;
+    private Runnable onTransitionFinish;
 
     public CameraTransitionHelper(Game game, OrthographicCamera camera) {
         this.game = game;
@@ -23,35 +22,36 @@ public class CameraTransitionHelper {
     }
 
     public void transition(Vector2 targetPos, float targetZoom, Screen targetScreen, boolean dispose) {
-        this.dispose = dispose;
+        transition(targetPos, targetZoom, () -> setScreen(targetScreen, dispose));
+    }
+
+    public void transition(Vector2 targetPos, float targetZoom, Runnable onTransitionFinish) {
+        this.onTransitionFinish = onTransitionFinish;
         if (Options.REDUCE_MOTION.get()) {
-            if (targetScreen != null) setScreen(targetScreen, dispose);
-            else {
-                camera.position.set(targetPos.x, targetPos.y, 0);
-                camera.zoom = targetZoom;
-                camera.update();
-            }
+            camera.position.set(targetPos.x, targetPos.y, 0);
+            camera.zoom = targetZoom;
+            camera.update();
+            onTransitionFinish.run();
             return;
         }
         this.targetPos = targetPos;
         this.targetZoom = targetZoom;
-        this.targetScreen = targetScreen;
     }
 
     public void update(float delta) {
         if (targetPos == null) return;
         Vector2 camPos2D = new Vector2(camera.position.x, camera.position.y);
-        Vector2 diff = new Vector2(targetPos).sub(camPos2D);
+        Vector2 diff = targetPos.cpy().sub(camPos2D);
         camPos2D.mulAdd(diff, Math.min(delta * MOVE_SPEED, 1f));
         camera.position.set(camPos2D.x, camPos2D.y, 0);
-        float zoomDiff = targetZoom - camera.zoom;
-        camera.zoom += zoomDiff * Math.min(delta * ZOOM_SPEED, 1f);
-        if (diff.len() < 1f && Math.abs(zoomDiff) < 0.01f) {
+        float zoomDiff = targetZoom / camera.zoom;
+        camera.zoom += (targetZoom - camera.zoom) * Math.min(delta * ZOOM_SPEED, 1f);
+        if (diff.len() < 1f && Math.abs(zoomDiff - 1) < 0.01f) {
             camera.zoom = targetZoom;
             camera.position.set(targetPos.x, targetPos.y, 0);
-            if (targetScreen != null) setScreen(targetScreen, dispose);
+            if (onTransitionFinish != null) onTransitionFinish.run();
             targetPos = null;
-            targetScreen = null;
+            onTransitionFinish = null;
         }
         camera.update();
     }
@@ -62,10 +62,11 @@ public class CameraTransitionHelper {
 
     public void stopTransition() {
         targetPos = null;
-        targetScreen = null;
+        onTransitionFinish = null;
     }
 
     private void setScreen(Screen targetScreen, boolean dispose) {
+        if (targetScreen == null) return;
         Screen oldScreen = game.getScreen();
         game.setScreen(targetScreen);
         if (dispose) oldScreen.dispose();

@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.JsonReader;
@@ -26,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 public class CountryScreen implements Screen, InputProcessor {
+    public static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
     private final Game game;
     private final OrthographicCamera camera;
     private final OrthographicCamera hudCamera;
@@ -38,7 +41,7 @@ public class CountryScreen implements Screen, InputProcessor {
     private float startZoom;
     private final InfoTooltip tooltip = new InfoTooltip(new Skin(Gdx.files.internal("skin/skin.json")), true);
     private final Future<Map<String, Map<String, MapColor>>> completedCounties = loadCompletedCounties();
-    public static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
+    private boolean inInitialTransition = false;
 
     static {
         loadCountyCounts();
@@ -53,9 +56,21 @@ public class CountryScreen implements Screen, InputProcessor {
         hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         renderer = new CountryRenderer();
         transitionHelper = new CameraTransitionHelper(game, camera);
-        completedCountiesRenderer = new CountryCompletedCountiesRenderer(() -> camera.zoom > startZoom / 2);
+        completedCountiesRenderer = new CountryCompletedCountiesRenderer(() -> camera.zoom > startZoom / 2 && !inInitialTransition);
         Viewport viewport = new ScreenViewport(hudCamera);
         stage = new Stage(viewport);
+    }
+
+    public void zoomOutFromState(String state) {
+        Zoom zoom = renderer.getTargetZoom(state);
+        camera.position.set(zoom.center().x, zoom.center().y, 0);
+        camera.zoom = zoom.zoom();
+        camera.update();
+        inInitialTransition = true;
+        transitionHelper.transition(new Vector2(0, 0), startZoom, () -> {
+            completedCountiesRenderer.invalidateCache();
+            inInitialTransition = false;
+        });
     }
 
     @Override
@@ -103,8 +118,10 @@ public class CountryScreen implements Screen, InputProcessor {
     public void resize(int width, int height) {
         camera.viewportWidth = width;
         camera.viewportHeight = height;
-        startZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
-        camera.zoom = startZoom;
+        if (!inInitialTransition) {
+            startZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
+            camera.zoom = startZoom;
+        }
         camera.update();
         hudCamera.setToOrtho(false, width, height);
         hudCamera.update();
@@ -145,6 +162,7 @@ public class CountryScreen implements Screen, InputProcessor {
     @Override
     public void show() {
         InputManager.setInputProcessor(this);
+        if (transitionHelper.isInTransition()) return;
         camera.zoom = startZoom;
         camera.position.set(0, 0, 0);
         camera.update();
