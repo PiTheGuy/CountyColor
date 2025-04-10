@@ -139,7 +139,7 @@ public abstract class RegionRenderer implements Disposable {
         return new PolygonCollection(polygons);
     }
 
-    protected void ensureLoadingFinished() {
+    public void ensureLoadingFinished() {
         if (shapes == null) shapes = Util.getFutureValue(shapesFuture);
     }
 

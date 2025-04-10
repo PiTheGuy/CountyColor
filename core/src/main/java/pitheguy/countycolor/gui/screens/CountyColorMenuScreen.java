@@ -49,7 +49,7 @@ public class CountyColorMenuScreen extends InputAdapter implements Screen {
             }
         });
         root.add(exitButton).expandX().center().row();
-        if (lastScreen.getCompletion() > 0.999) {
+        if (lastScreen.getCompletion() > 0.0999) {
             TextButton markAsCompleteButton = new TextButton("Mark as Complete", skin);
             markAsCompleteButton.addListener(new ClickListener() {
                 @Override

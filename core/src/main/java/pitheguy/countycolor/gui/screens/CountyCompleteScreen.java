@@ -18,9 +18,13 @@ public class CountyCompleteScreen implements Screen {
     private final MapColor color;
     private final StateScreen stateScreen;
     private final Skin skin;
+    private final String county;
+    private final String state;
 
     public CountyCompleteScreen(Game game, String county, String state, MapColor color) {
         this.color = color;
+        this.county = county;
+        this.state = state;
         countyRenderer = new CountyRenderer(county, state);
         stage = new Stage();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -37,12 +41,7 @@ public class CountyCompleteScreen implements Screen {
             }
         });
         stage.addActor(button);
-        Label title = new Label((countyRenderer.isIndependentCity() ? "Independent City" : "County") + " Complete", skin, "title");
-        title.setPosition(Gdx.graphics.getWidth() / 2f - title.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight());
-        stage.addActor(title);
-        Label countyName = new Label(getCountyName(county) + ", " + state, skin);
-        countyName.setPosition(Gdx.graphics.getWidth() / 2f - countyName.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight() - countyName.getHeight());
-        stage.addActor(countyName);
+
     }
 
     private String getCountyName(String county) {
@@ -64,7 +63,15 @@ public class CountyCompleteScreen implements Screen {
         skin.dispose();
     }
 
-    @Override public void show() {}
+    @Override public void show() {
+        countyRenderer.ensureLoadingFinished();
+        Label title = new Label((countyRenderer.isIndependentCity() ? "Independent City" : "County") + " Complete", skin, "title");
+        title.setPosition(Gdx.graphics.getWidth() / 2f - title.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight());
+        stage.addActor(title);
+        Label countyName = new Label(getCountyName(county) + ", " + state, skin);
+        countyName.setPosition(Gdx.graphics.getWidth() / 2f - countyName.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight() - countyName.getHeight());
+        stage.addActor(countyName);
+    }
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}
     @Override public void resume() {}
