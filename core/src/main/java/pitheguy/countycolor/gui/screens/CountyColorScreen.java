@@ -223,7 +223,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
             Vector2 delta = mouseWorldBefore.sub(mouseWorldAfter);
             camera.position.add(delta.x, delta.y, 0);
         } else {
-            brushSize = MathUtils.clamp(brushSize - amountY, 1, 75);
+            brushSize = MathUtils.clamp(brushSize - amountY, 1, 100);
             slider.setValue(brushSize);
         }
         return true;
