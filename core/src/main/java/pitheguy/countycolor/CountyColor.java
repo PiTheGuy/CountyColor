@@ -44,6 +44,7 @@ public class CountyColor extends Game {
 
     @Override
     public void resize(int width, int height) {
+        if (width == 0 || height == 0) return;
         super.resize(width, height);
         OrthographicCamera camera = new OrthographicCamera();
         camera.setToOrtho(false, width, height);

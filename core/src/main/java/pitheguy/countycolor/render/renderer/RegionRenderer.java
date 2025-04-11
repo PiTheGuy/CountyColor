@@ -147,11 +147,16 @@ public abstract class RegionRenderer implements Disposable {
         return shapesFuture.isDone();
     }
 
+
     protected static Map<String, PolygonCollection> relativize(Map<String, PolygonCollection> shapes) {
-        float minX = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMinX).min().getAsDouble();
-        float minY = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMinY).min().getAsDouble();
-        float maxX = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMaxX).max().getAsDouble();
-        float maxY = (float) shapes.values().stream().mapToDouble(PolygonCollection::getMaxY).max().getAsDouble();
+        return relativize(shapes, shapes);
+    }
+
+    protected static Map<String, PolygonCollection> relativize(Map<String, PolygonCollection> shapes, Map<String, PolygonCollection> reference) {
+        float minX = (float) reference.values().stream().mapToDouble(PolygonCollection::getMinX).min().getAsDouble();
+        float minY = (float) reference.values().stream().mapToDouble(PolygonCollection::getMinY).min().getAsDouble();
+        float maxX = (float) reference.values().stream().mapToDouble(PolygonCollection::getMaxX).max().getAsDouble();
+        float maxY = (float) reference.values().stream().mapToDouble(PolygonCollection::getMaxY).max().getAsDouble();
         Map<String, PolygonCollection> relativeShapes = new HashMap<>();
         for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
             List<List<Vector2>> county = new ArrayList<>();

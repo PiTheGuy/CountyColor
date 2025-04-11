@@ -30,8 +30,12 @@ public class RenderUtil {
     }
 
     public static void drawThickPolyline(ShapeRenderer renderer, List<Vector2> points, float thickness) {
+        drawThickPolyline(renderer, points, thickness, true);
+    }
+
+    public static void drawThickPolyline(ShapeRenderer renderer, List<Vector2> points, float thickness, boolean connect) {
         Vector2 lastV3 = null, lastV4 = null;
-        for (int i = 0; i < points.size(); i++) {
+        for (int i = 0; i < (connect ? points.size() : points.size() - 1); i++) {
             Vector2 p1 = points.get(i);
             Vector2 p2 = points.get((i + 1) % points.size());
             if (p1.equals(p2)) p2 = points.get((i + 2) % points.size());
@@ -80,9 +84,9 @@ public class RenderUtil {
             int i2 = triangles.get(i + 1) * 2;
             int i3 = triangles.get(i + 2) * 2;
             renderer.triangle(
-                vertices[i1] * RenderConst.RENDER_SIZE / 2 * scale, vertices[i1 + 1] * RenderConst.RENDER_SIZE / 2 * scale,
-                vertices[i2] * RenderConst.RENDER_SIZE / 2 * scale, vertices[i2 + 1] * RenderConst.RENDER_SIZE / 2 * scale,
-                vertices[i3] * RenderConst.RENDER_SIZE / 2 * scale, vertices[i3 + 1] * RenderConst.RENDER_SIZE / 2 * scale
+                vertices[i1] * RENDER_SIZE / 2 * scale, vertices[i1 + 1] * RENDER_SIZE / 2 * scale,
+                vertices[i2] * RENDER_SIZE / 2 * scale, vertices[i2 + 1] * RENDER_SIZE / 2 * scale,
+                vertices[i3] * RENDER_SIZE / 2 * scale, vertices[i3 + 1] * RENDER_SIZE / 2 * scale
             );
         }
     }

@@ -7,7 +7,6 @@ import com.badlogic.gdx.scenes.scene2d.*;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.gui.components.InfoTooltip;
@@ -53,7 +52,7 @@ public class StateScreen implements Screen, InputProcessor {
         camera.zoom = maxZoom;
         camera.update();
         transitionHelper = new CameraTransitionHelper(game, camera);
-        renderer = new StateRenderer(state, () -> camera.zoom == maxZoom, () -> camera.zoom == maxZoom);
+        renderer = new StateRenderer(state, () -> camera.zoom == maxZoom, () -> camera.zoom == maxZoom, countryScreen.getCompletedCounties());
         countyDataFuture = CountyData.loadAsync(state);
         stage = new Stage(new ScreenViewport());
         resetStage();

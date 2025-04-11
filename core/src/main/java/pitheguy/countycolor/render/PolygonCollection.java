@@ -3,8 +3,7 @@ package pitheguy.countycolor.render;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
@@ -76,6 +75,19 @@ public class PolygonCollection {
 
         return maxX * RENDER_SIZE / 2 >= camMinX && minX * RENDER_SIZE / 2 <= camMaxX &&
                maxY * RENDER_SIZE / 2 >= camMinY && minY * RENDER_SIZE / 2 <= camMaxY;
+    }
+
+    public List<List<Vector2>> getSharedEdges(PolygonCollection other) {
+        List<List<Vector2>> sharedEdges = new ArrayList<>();
+        if (!boundingBoxOverlaps(other)) return sharedEdges;
+        for (List<Vector2> points : polygons) {
+            Polygon polygon = new Polygon(points);
+            for (List<Vector2> otherPoints : other.polygons) {
+                Polygon otherPolygon = new Polygon(otherPoints);
+                sharedEdges.addAll(polygon.getSharedEdges(otherPolygon));
+            }
+        }
+        return sharedEdges;
     }
 
 }

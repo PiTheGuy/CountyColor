@@ -169,6 +169,10 @@ public class CountryScreen implements Screen, InputProcessor {
         camera.update();
     }
 
+    public Future<Map<String, Map<String, MapColor>>> getCompletedCounties() {
+        return completedCounties;
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}

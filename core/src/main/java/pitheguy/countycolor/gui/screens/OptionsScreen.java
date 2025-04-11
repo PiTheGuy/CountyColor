@@ -13,8 +13,6 @@ import pitheguy.countycolor.options.Option;
 import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.util.InputManager;
 
-import java.util.Optional;
-
 public class OptionsScreen extends InputAdapter implements Screen {
     private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
     private final Game game;
@@ -41,6 +39,7 @@ public class OptionsScreen extends InputAdapter implements Screen {
         addOption(root, "Reduce Motion", Options.REDUCE_MOTION, "Disabled animations and transitions.");
         addOption(root, "Async Grid Updates", Options.ASYNC_GRID_UPDATES, "Improves performance, but may cause artifacts when using larger brush sizes.");
         addOption(root, "Enforce Map Colors", Options.ENFORCE_MAP_COLORS, "Ensures bordering counties never share a color unless no other options are available.");
+        addOption(root, "Neighbor Border Colors", Options.NEIGHBOR_BORDER_COLORS, "Displays the color of adjacent counties from other states along shared borders.");
         TextButton doneButton = new TextButton("Done", skin);
         doneButton.addListener(new ClickListener() {
             @Override
