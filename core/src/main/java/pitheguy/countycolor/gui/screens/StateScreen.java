@@ -27,7 +27,6 @@ public class StateScreen implements Screen, InputProcessor {
     private final String state;
     private final CountryScreen countryScreen;
     private final OrthographicCamera camera;
-    private final OrthographicCamera hudCamera;
     private final StateRenderer renderer;
     private final CameraTransitionHelper transitionHelper;
     private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
@@ -53,12 +52,10 @@ public class StateScreen implements Screen, InputProcessor {
         maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.zoom = maxZoom;
         camera.update();
-        hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         transitionHelper = new CameraTransitionHelper(game, camera);
         renderer = new StateRenderer(state, () -> camera.zoom == maxZoom, () -> camera.zoom == maxZoom);
         countyDataFuture = CountyData.loadAsync(state);
-        Viewport viewport = new ScreenViewport(hudCamera);
-        stage = new Stage(viewport);
+        stage = new Stage(new ScreenViewport());
         resetStage();
     }
 
@@ -207,8 +204,6 @@ public class StateScreen implements Screen, InputProcessor {
         maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.zoom = maxZoom;
         camera.update();
-        hudCamera.setToOrtho(false, width, height);
-        hudCamera.update();
         stage.getViewport().update(width, height, true);
         renderer.invalidateCache();
         backButton.setPosition(0, Gdx.graphics.getHeight() - backButton.getHeight());

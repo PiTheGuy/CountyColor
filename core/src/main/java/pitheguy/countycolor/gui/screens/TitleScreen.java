@@ -19,7 +19,6 @@ public class TitleScreen implements Screen {
     private final OrthographicCamera camera;
     private final Stage stage;
     private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
-    private final OrthographicCamera hudCamera;
     private final CountryScreen countryScreen;
     private boolean awaitingLoad = false;
     private final BitmapFont font = new BitmapFont();
@@ -30,9 +29,7 @@ public class TitleScreen implements Screen {
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.update();
-        hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        ScreenViewport viewport = new ScreenViewport(hudCamera);
-        stage = new Stage(viewport);
+        stage = new Stage(new ScreenViewport());
         countryScreen = new CountryScreen(game);
         initStage();
     }
@@ -125,8 +122,6 @@ public class TitleScreen implements Screen {
         camera.viewportHeight = height;
         camera.zoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.update();
-        hudCamera.setToOrtho(false, width, height);
-        hudCamera.update();
         stage.getViewport().update(width, height, true);
         renderer.invalidateCache();
     }
