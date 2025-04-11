@@ -95,7 +95,7 @@ public class StateScreen implements Screen, InputProcessor {
     }
 
     private void updateCursor() {
-        if (pendingCounty != null) return;
+        if (pendingCounty != null || camera.zoom != maxZoom) return;
         String hoveringCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (hoveringCounty == null || countyData.get(hoveringCounty).isCompleted())
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
@@ -191,8 +191,8 @@ public class StateScreen implements Screen, InputProcessor {
             transitionHelper.transition(zoom.center(), zoom.zoom(), null, false);
             pendingColorSelection = true;
             pendingCounty = selectedCounty;
-            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
         }
+        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
         return true;
     }
 
@@ -220,19 +220,10 @@ public class StateScreen implements Screen, InputProcessor {
         InputManager.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
-    @Override
-    public void hide() {
-        dispose();
-    }
-
+    @Override public void hide() {}
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public boolean keyDown(int keycode) {
-        if (keycode == Input.Keys.F4) {
-            System.out.println(RenderUtil.getMouseWorldCoords(camera));
-        }
-        return false;
-    }
+    @Override public boolean keyDown(int keycode) { return false; }
     @Override public boolean keyUp(int keycode) { return false; }
     @Override public boolean keyTyped(char character) { return false; }
     @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
