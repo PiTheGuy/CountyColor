@@ -62,6 +62,7 @@ public class CountryScreen implements Screen, InputProcessor {
     }
 
     public void zoomOutFromState(String state) {
+        renderer.ensureLoadingFinished();
         Zoom zoom = renderer.getTargetZoom(state);
         camera.position.set(zoom.center().x, zoom.center().y, 0);
         camera.zoom = zoom.zoom();
