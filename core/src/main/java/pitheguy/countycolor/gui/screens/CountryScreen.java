@@ -2,14 +2,15 @@ package pitheguy.countycolor.gui.screens;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -31,7 +32,6 @@ public class CountryScreen implements Screen, InputProcessor {
     public static final Map<String, Integer> COUNTY_COUNTS = new HashMap<>();
     private final Game game;
     private final OrthographicCamera camera;
-    private final OrthographicCamera hudCamera;
     private final CountryRenderer renderer;
     private final CountryCompletedCountiesRenderer completedCountiesRenderer;
     private final CameraTransitionHelper transitionHelper;
@@ -39,7 +39,8 @@ public class CountryScreen implements Screen, InputProcessor {
     private final SpriteBatch batch = new SpriteBatch();
     private final Stage stage;
     private float startZoom;
-    private final InfoTooltip tooltip = new InfoTooltip(new Skin(Gdx.files.internal("skin/skin.json")), true);
+    private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
+    private final InfoTooltip tooltip = new InfoTooltip(skin, true);
     private final Future<Map<String, Map<String, MapColor>>> completedCounties = loadCompletedCounties();
     private boolean inInitialTransition = false;
 
@@ -53,12 +54,29 @@ public class CountryScreen implements Screen, InputProcessor {
         startZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() * 2);
         camera.zoom = startZoom;
         camera.update();
-        hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         renderer = new CountryRenderer();
         transitionHelper = new CameraTransitionHelper(game, camera);
         completedCountiesRenderer = new CountryCompletedCountiesRenderer(() -> camera.zoom > startZoom / 2 && !inInitialTransition);
-        Viewport viewport = new ScreenViewport(hudCamera);
-        stage = new Stage(viewport);
+        stage = new Stage(new ScreenViewport());
+        initStage();
+    }
+
+    private void initStage() {
+        Table table = new Table();
+        table.setFillParent(true);
+        Button backButton = new Button(skin);
+        Texture arrowTexture = new Texture(Gdx.files.internal("icons/back.png"));
+        Image arrowImage = new Image(arrowTexture);
+        backButton.add(arrowImage);
+        backButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.setScreen(new TitleScreen(game));
+            }
+        });
+        backButton.setSize(40, 40);
+        table.top().left().add(backButton).size(40);
+        stage.addActor(table);
     }
 
     public void zoomOutFromState(String state) {
@@ -81,7 +99,7 @@ public class CountryScreen implements Screen, InputProcessor {
         font.dispose();
         batch.dispose();
         stage.dispose();
-        tooltip.getSkin().dispose();
+        skin.dispose();
     }
 
     @Override
@@ -124,8 +142,6 @@ public class CountryScreen implements Screen, InputProcessor {
             camera.zoom = startZoom;
         }
         camera.update();
-        hudCamera.setToOrtho(false, width, height);
-        hudCamera.update();
         stage.getViewport().update(width, height, true);
         completedCountiesRenderer.invalidateCache();
     }
@@ -162,7 +178,7 @@ public class CountryScreen implements Screen, InputProcessor {
 
     @Override
     public void show() {
-        InputManager.setInputProcessor(this);
+        InputManager.setInputProcessor(new InputMultiplexer(this, stage));
         if (transitionHelper.isInTransition()) return;
         camera.zoom = startZoom;
         camera.position.set(0, 0, 0);
