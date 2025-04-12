@@ -151,9 +151,11 @@ public class StateRenderer extends CountyLevelRenderer {
             if (!state.equals(this.state) && !borderingStates.contains(state)) continue;
             String subregionName = properties.getString("NAME");
             PolygonCollection polygons = loadSubregion(subregion);
-            if (state.equals(this.state)) shapes.put(subregionName, polygons);
+            if (state.equals(this.state)) {
+                shapes.put(subregionName, polygons);
+                postProcessJson(subregion);
+            }
             auxiliaryShapes.put(stateId + subregionName, polygons);
-            postProcessJson(subregion);
         }
         postProcessShapes(shapes);
         auxiliaryShapes = relativize(auxiliaryShapes, shapes);
