@@ -262,7 +262,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     private int getNumTestPoints() {
         if (brushSize > 30) return 128;
-        else if (brushSize > 10) return 64;
+        else if (brushSize > 15) return 64;
         else return 32;
     }
 
