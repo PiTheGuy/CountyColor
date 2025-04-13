@@ -165,7 +165,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         saveAsync();
         addCountyToCompletionFile();
         inTransition = true;
-        transitionHelper.transition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()), false);
+        transitionHelper.slowTransition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()), false);
     }
 
     @Override
