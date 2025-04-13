@@ -58,7 +58,7 @@ public class CameraTransitionHelper {
         camera.position.set(camPos2D.x, camPos2D.y, 0);
         float zoomDiff = targetZoom / camera.zoom;
         camera.zoom += (targetZoom - camera.zoom) * Math.min(delta * getZoomSpeed(), 1f);
-        if (diff.len() < 1f && Math.abs(zoomDiff - 1) < 0.01f) {
+        if (diff.len() < 0.1f && Math.abs(zoomDiff - 1) < 0.01f) {
             camera.zoom = targetZoom;
             camera.position.set(targetPos.x, targetPos.y, 0);
             if (onTransitionFinish != null) onTransitionFinish.run();
