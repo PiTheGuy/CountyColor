@@ -310,9 +310,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         root.addChild(county, countyJson);
         countyJson.addChild("color", new JsonValue(coloringGrid.getColor().getSerializedName()));
         if (getCompletion() < 1) {
-            byte[] compressed = Util.compress(coloringGrid.asBitSet().toByteArray());
-            String encoded = Base64.getEncoder().encodeToString(compressed);
-            countyJson.addChild("coloredPoints", new JsonValue(encoded));
+            countyJson.addChild("coloredPoints", new JsonValue(coloringGrid.asEncodedString()));
         }
         countyJson.addChild("completion", new JsonValue(getCompletion()));
         dataHandle.writeString(root.toJson(JsonWriter.OutputType.json), false);

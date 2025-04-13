@@ -8,6 +8,7 @@ import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.util.Util;
 
+import java.io.*;
 import java.util.Base64;
 import java.util.BitSet;
 import java.util.concurrent.ExecutorService;
@@ -44,7 +45,7 @@ public class ColoringGrid implements Disposable {
 
         String encoded = json.getString("coloredPoints");
         byte[] compressed = Base64.getDecoder().decode(encoded);
-        BitSet bitSet = BitSet.valueOf(Util.decompress(compressed));
+        BitSet bitSet = decode(compressed);
 
         Pixmap pixmap = new Pixmap(COLORING_SIZE, COLORING_SIZE, Pixmap.Format.RGBA8888);
         pixmap.setColor(0, 0, 0, 0);
@@ -57,6 +58,64 @@ public class ColoringGrid implements Disposable {
         return new ColoringGrid(pixmap, bitSet, color);
     }
 
+    private byte[] encode() {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        boolean current = bitSet.get(0);
+        int runLength = 1;
+        if (current) writeVarInt(0, dos);
+        for (int i = 1; i < COLORING_SIZE * COLORING_SIZE; i++) {
+            if (current == bitSet.get(i)) runLength++;
+            else {
+                writeVarInt(runLength, dos);
+                current = bitSet.get(i);
+                runLength = 1;
+            }
+        }
+        writeVarInt(runLength, dos);
+        return Util.compress(baos.toByteArray());
+    }
+
+    private static BitSet decode(byte[] input) {
+        ByteArrayInputStream bais = new ByteArrayInputStream(Util.decompress(input));
+        DataInputStream dis = new DataInputStream(bais);
+        BitSet bitSet = new BitSet(COLORING_SIZE * COLORING_SIZE);
+        int index = 0;
+        boolean current = false;
+        try {
+            while (dis.available() > 0) {
+                int runLength = readVarInt(dis);
+                if (current) bitSet.flip(index, index + runLength);
+                index += runLength;
+                current = !current;
+            }
+        } catch (IOException ignored) {}
+        return bitSet;
+    }
+
+    private static void writeVarInt(int value, OutputStream out) {
+        try {
+            while ((value & 0xFFFFFF80) != 0L) {
+                out.write((value & 0x7F) | 0x80);
+                value >>>= 7;
+            }
+            out.write(value & 0x7F);
+        } catch (IOException ignored) {}
+    }
+
+    private static int readVarInt(InputStream in) {
+        int value = 0;
+        int position = 0;
+        int b;
+        try {
+            while (((b = in.read()) & 0x80) != 0) {
+                value |= (b & 0x7F) << position;
+                position += 7;
+            }
+            value |= b << position;
+        } catch (IOException ignored) {}
+        return value;
+    }
 
     public void setColor(MapColor color) {
         this.color = color;
@@ -69,6 +128,10 @@ public class ColoringGrid implements Disposable {
 
     public BitSet asBitSet() {
         return bitSet;
+    }
+
+    public String asEncodedString() {
+        return Base64.getEncoder().encodeToString(encode());
     }
 
     public MapColor getColor() {
