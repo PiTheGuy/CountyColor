@@ -26,11 +26,11 @@ public abstract class RegionRenderer implements Disposable {
     protected final Map<List<Vector2>, ShortArray> triangles = new HashMap<>();
 
 
-    public RegionRenderer(JsonValue sourceJson, Predicate<JsonValue> predicate) {
+    public RegionRenderer(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate) {
         this(sourceJson, predicate, null);
     }
 
-    public RegionRenderer(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+    public RegionRenderer(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
         shapesFuture = loadShapesAsync(sourceJson, predicate, duplicatePreventionKey);
     }
 
@@ -81,12 +81,12 @@ public abstract class RegionRenderer implements Disposable {
         shapeRenderer.setProjectionMatrix(camera.combined);
     }
 
-    private Future<Map<String, PolygonCollection>> loadShapesAsync(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+    private Future<Map<String, PolygonCollection>> loadShapesAsync(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
         return SHAPE_LOAD_EXECUTOR.submit(() -> loadShapes(sourceJson, predicate, duplicatePreventionKey));
     }
 
-    protected Map<String, PolygonCollection> loadShapes(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        JsonValue array = sourceJson.get("features");
+    protected Map<String, PolygonCollection> loadShapes(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+        JsonValue array = Util.getFutureValue(sourceJson).get("features");
         Map<String, PolygonCollection> shapes = new HashMap<>();
         for (JsonValue subregion : array) {
             JsonValue properties = subregion.get("properties");

@@ -6,8 +6,10 @@ import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.metadata.StateBorders;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
+import pitheguy.countycolor.util.Util;
 
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 public class CountryRenderer extends RegionRenderer {
@@ -33,8 +35,8 @@ public class CountryRenderer extends RegionRenderer {
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        JsonValue array = sourceJson.get("features");
+    protected Map<String, PolygonCollection> loadShapes(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+        JsonValue array = Util.getFutureValue(sourceJson).get("features");
         Map<String, PolygonCollection> shapes = new HashMap<>();
         Map<String, PolygonCollection> renderedSeparately = new HashMap<>();
         for (JsonValue subregion : array) {

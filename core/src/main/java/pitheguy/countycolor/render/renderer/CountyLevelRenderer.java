@@ -10,6 +10,7 @@ import pitheguy.countycolor.render.util.RenderUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 import static pitheguy.countycolor.render.util.RenderConst.OUTLINE_THICKNESS;
@@ -18,7 +19,7 @@ import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 public abstract class CountyLevelRenderer extends RegionRenderer {
     private final List<String> independentCities = new ArrayList<>();
 
-    public CountyLevelRenderer(JsonValue sourceJson, Predicate<JsonValue> predicate) {
+    public CountyLevelRenderer(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate) {
         super(sourceJson, predicate);
     }
 

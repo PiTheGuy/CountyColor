@@ -138,9 +138,9 @@ public class StateRenderer extends CountyLevelRenderer {
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+    protected Map<String, PolygonCollection> loadShapes(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
         List<String> borderingStates = StateBorders.getBorderingStates(state);
-        JsonValue array = sourceJson.get("features");
+        JsonValue array = Util.getFutureValue(sourceJson).get("features");
         Map<String, PolygonCollection> shapes = new HashMap<>();
         auxiliaryShapes = new HashMap<>();
         for (JsonValue subregion : array) {

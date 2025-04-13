@@ -9,6 +9,7 @@ import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderCachingHelper;
 
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 public class TitleScreenCountryRenderer extends RegionRenderer {
@@ -48,7 +49,7 @@ public class TitleScreenCountryRenderer extends RegionRenderer {
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+    protected Map<String, PolygonCollection> loadShapes(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
         Map<String, PolygonCollection> shapes = super.loadShapes(sourceJson, predicate, duplicatePreventionKey);
         List<String> keys = new ArrayList<>(shapes.keySet());
         Collections.shuffle(keys);
