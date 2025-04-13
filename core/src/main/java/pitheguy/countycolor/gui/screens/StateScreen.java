@@ -117,6 +117,7 @@ public class StateScreen implements Screen, InputProcessor {
 
     private void goBack() {
         if (pendingCounty == null) {
+            countryScreen.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
             countryScreen.zoomOutFromState(state);
             game.setScreen(countryScreen);
         } else {
@@ -206,7 +207,6 @@ public class StateScreen implements Screen, InputProcessor {
         stage.getViewport().update(width, height, true);
         renderer.invalidateCache();
         backButton.setPosition(0, Gdx.graphics.getHeight() - backButton.getHeight());
-
     }
 
     @Override
