@@ -1,20 +1,13 @@
 package pitheguy.countycolor.render.renderer;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
-import pitheguy.countycolor.gui.screens.CountryScreen;
+import pitheguy.countycolor.metadata.StateBorders;
 import pitheguy.countycolor.render.PolygonCollection;
-import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.render.util.RenderUtil;
-import pitheguy.countycolor.util.Util;
 
 import java.util.*;
-import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 public class CountryRenderer extends RegionRenderer {
@@ -30,7 +23,7 @@ public class CountryRenderer extends RegionRenderer {
     public static final List<String> RENDERED_SEPARATELY = List.of("Alaska", "Hawaii");
 
     public CountryRenderer() {
-        super("metadata/states.geojson", properties -> !FILTERED_STATES.contains(properties.getString("NAME")));
+        super(StateBorders.getJson(), properties -> !FILTERED_STATES.contains(properties.getString("NAME")));
     }
 
     public void renderCountry(OrthographicCamera camera) {
@@ -40,10 +33,8 @@ public class CountryRenderer extends RegionRenderer {
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        JsonReader reader = new JsonReader();
-        JsonValue root = reader.parse(Gdx.files.internal(sourceFilePath));
-        JsonValue array = root.get("features");
+    protected Map<String, PolygonCollection> loadShapes(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+        JsonValue array = sourceJson.get("features");
         Map<String, PolygonCollection> shapes = new HashMap<>();
         Map<String, PolygonCollection> renderedSeparately = new HashMap<>();
         for (JsonValue subregion : array) {

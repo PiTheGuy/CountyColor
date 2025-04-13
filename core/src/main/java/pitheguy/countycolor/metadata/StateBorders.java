@@ -1,8 +1,9 @@
 package pitheguy.countycolor.metadata;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.JsonReader;
+import com.badlogic.gdx.utils.JsonValue;
 
-import java.io.*;
 import java.util.*;
 
 public class StateBorders {
@@ -19,6 +20,7 @@ public class StateBorders {
 
     private static final int SIZE = STATES.length;
     private static final boolean[][] BORDER_MATRIX = loadMatrix();
+    private static JsonValue json;
 
     public static List<String> getBorderingStates(String state) {
         int index = Arrays.asList(STATES).indexOf(state);
@@ -34,5 +36,13 @@ public class StateBorders {
         String[] lines = data.split("\n");
         for (int i = 0; i < lines.length; i++) for (int j = 0; j < SIZE; j++) result[i][j] = lines[i].charAt(j) != '0';
         return result;
+    }
+
+    public static JsonValue getJson() {
+        if (json == null) {
+            JsonReader reader = new JsonReader();
+            json = reader.parse(Gdx.files.internal("metadata/states.geojson"));
+        }
+        return json;
     }
 }

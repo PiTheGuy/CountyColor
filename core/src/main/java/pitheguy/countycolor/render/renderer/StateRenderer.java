@@ -5,14 +5,15 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.CountyData;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.metadata.CountyBorders;
 import pitheguy.countycolor.metadata.StateBorders;
 import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.render.PolygonCollection;
-import pitheguy.countycolor.render.util.*;
+import pitheguy.countycolor.render.util.RenderCachingHelper;
+import pitheguy.countycolor.render.util.RenderUtil;
 import pitheguy.countycolor.util.Util;
 
 import java.util.*;
@@ -37,7 +38,7 @@ public class StateRenderer extends CountyLevelRenderer {
 
 
     public StateRenderer(String state, BooleanSupplier useCachedTexture, BooleanSupplier renderHoveringCounty, Future<Map<String, Map<String, MapColor>>> completedCounties) {
-        super("metadata/counties.json", properties -> properties.getString("STATEFP").equals(STATE_TO_ID.get(state)));
+        super(CountyBorders.getJson(), properties -> properties.getString("STATEFP").equals(STATE_TO_ID.get(state)));
         this.state = state;
         this.useCachedTexture = useCachedTexture;
         this.renderHoveringCounty = renderHoveringCounty;
@@ -137,11 +138,9 @@ public class StateRenderer extends CountyLevelRenderer {
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+    protected Map<String, PolygonCollection> loadShapes(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
         List<String> borderingStates = StateBorders.getBorderingStates(state);
-        JsonReader reader = new JsonReader();
-        JsonValue root = reader.parse(Gdx.files.internal(sourceFilePath));
-        JsonValue array = root.get("features");
+        JsonValue array = sourceJson.get("features");
         Map<String, PolygonCollection> shapes = new HashMap<>();
         auxiliaryShapes = new HashMap<>();
         for (JsonValue subregion : array) {

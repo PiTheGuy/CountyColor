@@ -2,9 +2,9 @@ package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.metadata.CountyBorders;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderCachingHelper;
 
@@ -29,7 +29,7 @@ public class TitleScreenCountryRenderer extends RegionRenderer {
 
 
     public TitleScreenCountryRenderer() {
-        super("metadata/counties.json", properties -> !HIDDEN_STATES.contains(StateRenderer.getStateFromId(properties.getString("STATEFP"))), "STATEFP");
+        super(CountyBorders.getJson(), properties -> !HIDDEN_STATES.contains(StateRenderer.getStateFromId(properties.getString("STATEFP"))), "STATEFP");
         cachingHelper = new RenderCachingHelper();
     }
 
@@ -48,8 +48,8 @@ public class TitleScreenCountryRenderer extends RegionRenderer {
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        Map<String, PolygonCollection> shapes = super.loadShapes(sourceFilePath, predicate, duplicatePreventionKey);
+    protected Map<String, PolygonCollection> loadShapes(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+        Map<String, PolygonCollection> shapes = super.loadShapes(sourceJson, predicate, duplicatePreventionKey);
         List<String> keys = new ArrayList<>(shapes.keySet());
         Collections.shuffle(keys);
         Random random = new Random();

@@ -26,12 +26,12 @@ public abstract class RegionRenderer implements Disposable {
     protected final Map<List<Vector2>, ShortArray> triangles = new HashMap<>();
 
 
-    public RegionRenderer(String sourceFilePath, Predicate<JsonValue> predicate) {
-        this(sourceFilePath, predicate, null);
+    public RegionRenderer(JsonValue sourceJson, Predicate<JsonValue> predicate) {
+        this(sourceJson, predicate, null);
     }
 
-    public RegionRenderer(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        shapesFuture = loadShapesAsync(sourceFilePath, predicate, duplicatePreventionKey);
+    public RegionRenderer(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+        shapesFuture = loadShapesAsync(sourceJson, predicate, duplicatePreventionKey);
     }
 
     protected void renderRegion(OrthographicCamera camera, boolean thick, boolean scaleThickness) {
@@ -81,14 +81,12 @@ public abstract class RegionRenderer implements Disposable {
         shapeRenderer.setProjectionMatrix(camera.combined);
     }
 
-    private Future<Map<String, PolygonCollection>> loadShapesAsync(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        return SHAPE_LOAD_EXECUTOR.submit(() -> loadShapes(sourceFilePath, predicate, duplicatePreventionKey));
+    private Future<Map<String, PolygonCollection>> loadShapesAsync(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+        return SHAPE_LOAD_EXECUTOR.submit(() -> loadShapes(sourceJson, predicate, duplicatePreventionKey));
     }
 
-    protected Map<String, PolygonCollection> loadShapes(String sourceFilePath, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        JsonReader reader = new JsonReader();
-        JsonValue root = reader.parse(Gdx.files.internal(sourceFilePath));
-        JsonValue array = root.get("features");
+    protected Map<String, PolygonCollection> loadShapes(JsonValue sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+        JsonValue array = sourceJson.get("features");
         Map<String, PolygonCollection> shapes = new HashMap<>();
         for (JsonValue subregion : array) {
             JsonValue properties = subregion.get("properties");

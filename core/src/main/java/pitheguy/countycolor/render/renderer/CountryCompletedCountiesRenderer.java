@@ -3,6 +3,7 @@ package pitheguy.countycolor.render.renderer;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.metadata.CountyBorders;
 import pitheguy.countycolor.render.util.RenderCachingHelper;
 import pitheguy.countycolor.util.Util;
 
@@ -15,7 +16,7 @@ public class CountryCompletedCountiesRenderer extends RegionRenderer {
     private final BooleanSupplier usedCachedTexture;
 
     public CountryCompletedCountiesRenderer(BooleanSupplier usedCachedTexture) {
-        super("metadata/counties.json", properties -> {
+        super(CountyBorders.getJson(), properties -> {
             String state = StateRenderer.getStateFromId(properties.getString("STATEFP"));
             return !CountryRenderer.FILTERED_STATES.contains(state) && !CountryRenderer.RENDERED_SEPARATELY.contains(state);
         }, "STATEFP");

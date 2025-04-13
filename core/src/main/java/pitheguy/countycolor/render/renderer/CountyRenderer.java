@@ -6,8 +6,8 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.metadata.CountyBorders;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
 
@@ -20,7 +20,7 @@ public class CountyRenderer extends CountyLevelRenderer {
     private float highlightTime = 0;
 
     public CountyRenderer(String county, String state) {
-        super("metadata/counties.json", properties -> properties.getString("STATEFP").equals(StateRenderer.getIdForState(state)) && properties.getString("Name").equals(county));
+        super(CountyBorders.getJson(), properties -> properties.getString("STATEFP").equals(StateRenderer.getIdForState(state)) && properties.getString("Name").equals(county));
         this.state = state;
     }
 
