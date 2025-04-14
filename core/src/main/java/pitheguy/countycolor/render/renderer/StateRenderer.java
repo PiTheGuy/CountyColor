@@ -1,6 +1,5 @@
 package pitheguy.countycolor.render.renderer;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -134,11 +133,6 @@ public class StateRenderer extends CountyLevelRenderer {
         Map<String, PolygonCollection> refShapes = reference.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getPolygons()));
         Map<String, PolygonCollection> newShapes = relativize(shapes, refShapes);
         return counties.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().withPolygons(newShapes.get(entry.getKey()))));
-    }
-
-    @Override
-    protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
-        if (state.equals("Alaska")) for (PolygonCollection polygons : shapes.values()) RenderUtil.fixRollover(polygons);
     }
 
     public void dispose() {

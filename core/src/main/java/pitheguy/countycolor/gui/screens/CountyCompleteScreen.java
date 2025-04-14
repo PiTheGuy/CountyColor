@@ -7,7 +7,9 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import pitheguy.countycolor.coloring.CountyCompletionData;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.util.InputManager;
 
@@ -18,17 +20,15 @@ public class CountyCompleteScreen implements Screen {
     private final MapColor color;
     private final StateScreen stateScreen;
     private final Skin skin;
-    private final String county;
-    private final String state;
+    private final CountyData.County county;
 
-    public CountyCompleteScreen(Game game, String county, String state, MapColor color) {
+    public CountyCompleteScreen(Game game, CountyData.County county, MapColor color) {
         this.color = color;
         this.county = county;
-        this.state = state;
-        countyRenderer = new CountyRenderer(county, state);
+        countyRenderer = new CountyRenderer(county);
         stage = new Stage();
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        stateScreen = new StateScreen(game, state);
+        stateScreen = new StateScreen(game, county.getState());
         InputManager.setInputProcessor(stage);
         skin = new Skin(Gdx.files.internal("skin/skin.json"));
         TextButton button = new TextButton("Continue", skin);
@@ -44,11 +44,6 @@ public class CountyCompleteScreen implements Screen {
 
     }
 
-    private String getCountyName(String county) {
-        if (county.endsWith(" (City)")) county = county.substring(0, county.length() - " (City)".length());
-        return countyRenderer.isIndependentCity() ? county : county + " County";
-    }
-
     @Override
     public void render(float delta) {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -57,21 +52,24 @@ public class CountyCompleteScreen implements Screen {
         countyRenderer.renderCountyFilled(camera, 0.5f, color);
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         stage.dispose();
         countyRenderer.dispose();
         skin.dispose();
     }
 
-    @Override public void show() {
+    @Override
+    public void show() {
         countyRenderer.ensureLoadingFinished();
-        Label title = new Label((countyRenderer.isIndependentCity() ? "Independent City" : "County") + " Complete", skin, "title");
+        Label title = new Label((county.isIndependentCity() ? "Independent City" : "County") + " Complete", skin, "title");
         title.setPosition(Gdx.graphics.getWidth() / 2f - title.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight());
         stage.addActor(title);
-        Label countyName = new Label(getCountyName(county) + ", " + state, skin);
+        Label countyName = new Label(county.getFullName() + ", " + county.getState(), skin);
         countyName.setPosition(Gdx.graphics.getWidth() / 2f - countyName.getWidth() / 2, Gdx.graphics.getHeight() - title.getHeight() - countyName.getHeight());
         stage.addActor(countyName);
     }
+
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}
     @Override public void resume() {}

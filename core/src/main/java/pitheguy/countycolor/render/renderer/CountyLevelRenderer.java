@@ -4,7 +4,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
@@ -56,9 +55,4 @@ public abstract class CountyLevelRenderer extends RegionRenderer {
         return independentCities.contains(name);
     }
 
-    @Override
-    protected void postProcessJson(JsonValue json) {
-        JsonValue properties = json.get("properties");
-        if (Integer.parseInt(properties.getString("COUNTYFP")) > 500) independentCities.add(properties.getString("NAME"));
-    }
 }

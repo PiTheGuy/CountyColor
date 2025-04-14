@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.metadata.CountyData;
-import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
 
 import java.util.*;
@@ -16,13 +15,11 @@ import java.util.*;
 import static pitheguy.countycolor.render.util.RenderConst.*;
 
 public class CountyRenderer extends CountyLevelRenderer {
-    private final String county;
-    private final String state;
+    private final CountyData.County county;
     private float highlightTime = 0;
 
-    public CountyRenderer(String county, String state) {
+    public CountyRenderer(CountyData.County county) {
         this.county = county;
-        this.state = state;
     }
 
     private CountyData.County getCounty() {
@@ -63,13 +60,7 @@ public class CountyRenderer extends CountyLevelRenderer {
 
     @Override
     protected void loadShapes() {
-        CountyData.County county = CountyData.getCounty(this.county, state);
         counties = StateRenderer.rel(Map.of(county.getName(), county));
-    }
-
-    @Override
-    protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
-        if (state.equals("Alaska")) RenderUtil.fixRollover(shapes.get(shapes.keySet().iterator().next()));
     }
 
     public void highlightUncoloredAreas() {
@@ -84,10 +75,6 @@ public class CountyRenderer extends CountyLevelRenderer {
 
     public boolean isCoordinateWithinCounty(Vector2 coordinate) {
         return getCountyAtCoords(coordinate) != null;
-    }
-
-    public boolean isIndependentCity() {
-        return isIndependentCity(shapes.keySet().iterator().next());
     }
 
     public int computeTotalGridSquares() {

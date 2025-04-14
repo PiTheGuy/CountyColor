@@ -132,7 +132,7 @@ public class StateScreen implements Screen, InputProcessor {
     }
 
     private void showColorSelection() {
-        CountyColorScreen nextScreen = new CountyColorScreen(game, pendingCounty.getName(), state, false);
+        CountyColorScreen nextScreen = new CountyColorScreen(game, pendingCounty, false);
         resetStage();
         Table table = new Table();
         table.setFillParent(true);
@@ -183,7 +183,7 @@ public class StateScreen implements Screen, InputProcessor {
         Zoom zoom = renderer.getTargetZoom(selectedCounty.getPolygons());
         resetStage();
         if (countyCompletionData.get(selectedCounty.getName()).isStarted()) {
-            CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty.getName(), state, true);
+            CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty, true);
             transitionHelper.transition(zoom.center(), zoom.zoom(), targetScreen, false);
         } else {
             transitionHelper.transition(zoom.center(), zoom.zoom(), null, false);

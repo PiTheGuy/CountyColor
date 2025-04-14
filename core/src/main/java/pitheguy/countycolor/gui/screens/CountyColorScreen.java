@@ -15,6 +15,7 @@ import com.badlogic.gdx.utils.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import pitheguy.countycolor.coloring.ColoringGrid;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.renderer.ColoringRenderer;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.render.util.*;
@@ -26,8 +27,7 @@ import java.util.concurrent.*;
 
 public class CountyColorScreen implements Screen, InputProcessor {
     private final Game game;
-    private final String county;
-    private final String state;
+    private final CountyData.County county;
     private final OrthographicCamera camera;
     private final OrthographicCamera hudCamera;
     private final ShapeRenderer cursorRenderer = new ShapeRenderer();
@@ -56,10 +56,9 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private Thread saveThread;
     private boolean markedAsComplete = false;
 
-    public CountyColorScreen(Game game, String county, String state, boolean load) {
+    public CountyColorScreen(Game game, CountyData.County county, boolean load) {
         this.game = game;
         this.county = county;
-        this.state = state;
         maxZoom = (float) RenderConst.RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -73,7 +72,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
             coloringGridFuture = executor.submit(this::load);
             executor.shutdown();
         } else coloringGrid = new ColoringGrid();
-        countyRenderer = new CountyRenderer(county, state);
+        countyRenderer = new CountyRenderer(county);
         initStage();
     }
 
@@ -165,7 +164,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         saveAsync();
         addCountyToCompletionFile();
         inTransition = true;
-        transitionHelper.slowTransition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, state, coloringGrid.getColor()), false);
+        transitionHelper.slowTransition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, coloringGrid.getColor()), false);
     }
 
     @Override
@@ -302,12 +301,12 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     private void save() {
         if (!dirty) return;
-        FileHandle dataHandle = Gdx.files.local("data/" + state + ".json");
+        FileHandle dataHandle = Gdx.files.local("data/" + county.getState() + ".json");
         JsonReader reader = new JsonReader();
         JsonValue root = dataHandle.exists() ? reader.parse(dataHandle) : new JsonValue(JsonValue.ValueType.object);
-        if (root.has(county)) root.remove(county);
+        if (root.has(county.getName())) root.remove(county.getName());
         JsonValue countyJson = new JsonValue(JsonValue.ValueType.object);
-        root.addChild(county, countyJson);
+        root.addChild(county.getName(), countyJson);
         countyJson.addChild("color", new JsonValue(coloringGrid.getColor().getSerializedName()));
         if (getCompletion() < 1) {
             countyJson.addChild("coloredPoints", new JsonValue(coloringGrid.asEncodedString()));
@@ -320,18 +319,18 @@ public class CountyColorScreen implements Screen, InputProcessor {
         FileHandle handle = Gdx.files.local("data/completed_counties.json");
         JsonReader reader = new JsonReader();
         JsonValue root = handle.exists() ? reader.parse(handle) : new JsonValue(JsonValue.ValueType.object);
-        JsonValue state = root.has(this.state) ? root.get(this.state) : new JsonValue(JsonValue.ValueType.object);
-        state.addChild(county, new JsonValue(coloringGrid.getColor().getSerializedName()));
-        if (!root.has(this.state)) root.addChild(this.state, state);
+        JsonValue state = root.has(county.getState()) ? root.get(county.getState()) : new JsonValue(JsonValue.ValueType.object);
+        state.addChild(county.getName(), new JsonValue(coloringGrid.getColor().getSerializedName()));
+        if (!root.has(county.getState())) root.addChild(county.getState(), state);
         handle.writeString(root.toJson(JsonWriter.OutputType.json), false);
     }
 
     private ColoringGrid load() {
-        FileHandle dataHandle = Gdx.files.local("data/" + state + ".json");
+        FileHandle dataHandle = Gdx.files.local("data/" + county.getState() + ".json");
         if (!dataHandle.exists()) throw new IllegalStateException("No saved data for county");
         JsonReader reader = new JsonReader();
         JsonValue root = reader.parse(dataHandle);
-        JsonValue countyJson = root.get(county);
+        JsonValue countyJson = root.get(county.getName());
         if (countyJson == null) throw new IllegalStateException("No saved data for county");
         if (countyJson.getBoolean("complete", false))
             throw new IllegalStateException("Tried to load an already completed county");
@@ -363,7 +362,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     public String getState() {
-        return state;
+        return county.getState();
     }
 
     @Override public boolean keyDown(int keycode) {

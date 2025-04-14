@@ -12,7 +12,6 @@ import pitheguy.countycolor.util.Util;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Predicate;
 
 import static pitheguy.countycolor.render.util.RenderConst.OUTLINE_THICKNESS;
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
@@ -21,7 +20,6 @@ public abstract class RegionRenderer implements Disposable {
     private static final ExecutorService SHAPE_LOAD_EXECUTOR = Executors.newCachedThreadPool();
 
     private final Future<?> future;
-    protected Map<String, PolygonCollection> shapes;
     protected final ShapeRenderer shapeRenderer = new ShapeRenderer();
     protected final Map<List<Vector2>, ShortArray> triangles = new HashMap<>();
 
@@ -77,11 +75,6 @@ public abstract class RegionRenderer implements Disposable {
     }
 
     protected abstract void loadShapes();
-
-    protected void postProcessJson(JsonValue json) {}
-
-    protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
-    }
 
     public static PolygonCollection loadSubregion(JsonValue subregion) {
         JsonValue geometry = subregion.get("geometry");
