@@ -5,51 +5,51 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.JsonValue;
+import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Future;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static pitheguy.countycolor.render.util.RenderConst.OUTLINE_THICKNESS;
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public abstract class CountyLevelRenderer extends RegionRenderer {
+
+    protected Map<String, CountyData.County> counties;
     private final List<String> independentCities = new ArrayList<>();
 
-    public CountyLevelRenderer(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate) {
-        super(sourceJson, predicate);
-    }
-
     protected void renderRegion(OrthographicCamera camera, boolean thick, boolean scaleThickness) {
-        super.renderRegion(camera, thick, scaleThickness);
+        super.renderRegion(counties.values().stream().map(CountyData.County::getPolygons).toList(), camera, thick, scaleThickness);
         renderIndependentCities(camera, thick, scaleThickness, name -> true);
     }
 
-    protected void renderIndependentCities(OrthographicCamera camera, boolean thick, boolean scaleThickness, Predicate<String> predicate) {
+    protected void renderIndependentCities(OrthographicCamera camera, boolean thick, boolean scaleThickness, Predicate<CountyData.County> predicate) {
         shapeRenderer.begin(thick ? ShapeRenderer.ShapeType.Filled : ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.BLACK);
-        for (String subregion : independentCities) {
-            if (!predicate.test(subregion)) continue;
-            if (!shapes.get(subregion).isVisibleToCamera(camera)) continue;
-            if (thick) renderThickSubregionOutline(subregion, scaleThickness ? OUTLINE_THICKNESS * camera.zoom : OUTLINE_THICKNESS);
-            else renderSubregionOutline(subregion);
-        }
+        counties.values().stream()
+            .filter(CountyData.County::isIndependentCity)
+            .forEach(county -> {
+                if (!predicate.test(county)) return;
+                if (county.getPolygons().isVisibleToCamera(camera)) return;
+                if (thick) renderThickSubregionOutline(county.getPolygons(), scaleThickness ? OUTLINE_THICKNESS * camera.zoom : OUTLINE_THICKNESS);
+                else renderSubregionOutline(county.getPolygons());
+            });
         shapeRenderer.end();
     }
 
-    @Override
-    public String getSubregionAtCoords(Vector2 coordinate) {
-        for (String independentCity : independentCities) {
-            PolygonCollection subregion = shapes.get(independentCity);
-            if (!subregion.boundsCheck(coordinate)) continue;
-            for (List<Vector2> polygon : subregion.getPolygons())
-                if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RENDER_SIZE), polygon))
-                    return independentCity;
-        }
-        return super.getSubregionAtCoords(coordinate);
+    public CountyData.County getCountyAtCoords(Vector2 coordinate) {
+        return counties.entrySet().stream()
+            .sorted(Map.Entry.comparingByValue(Comparator.comparing(CountyData.County::isIndependentCity).reversed()))
+            .filter(entry -> {
+                PolygonCollection subregion = entry.getValue().getPolygons();
+                if (!subregion.boundsCheck(coordinate)) return false;
+                for (List<Vector2> polygon : subregion.getPolygons())
+                    if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RENDER_SIZE), polygon))
+                        return true;
+                return false;
+            }).findFirst().map(Map.Entry::getValue).orElse(null);
     }
 
     public boolean isIndependentCity(String name) {

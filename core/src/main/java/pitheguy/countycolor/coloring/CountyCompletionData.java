@@ -8,11 +8,11 @@ import com.badlogic.gdx.utils.JsonValue;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class CountyData {
-    public static final CountyData EMPTY = new CountyData(Map.of());
+public class CountyCompletionData {
+    public static final CountyCompletionData EMPTY = new CountyCompletionData(Map.of());
     private final Map<String, Entry> entries;
 
-    public CountyData(Map<String, Entry> entries) {
+    public CountyCompletionData(Map<String, Entry> entries) {
         this.entries = entries;
     }
 
@@ -20,11 +20,11 @@ public class CountyData {
         return entries.getOrDefault(county, Entry.EMPTY);
     }
 
-    public static Future<CountyData> loadAsync(String state) {
+    public static Future<CountyCompletionData> loadAsync(String state) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         return executor.submit(() -> {
             FileHandle dataHandle = Gdx.files.local("data/" + state + ".json");
-            if (!dataHandle.exists()) return CountyData.EMPTY;
+            if (!dataHandle.exists()) return CountyCompletionData.EMPTY;
 
             JsonReader reader = new JsonReader();
             JsonValue root = reader.parse(dataHandle);
@@ -35,7 +35,7 @@ public class CountyData {
                 float completion = county.getFloat("completion");
                 entries.put(countyName, new Entry(color, completion));
             }
-            return new CountyData(entries);
+            return new CountyCompletionData(entries);
         });
     }
 

@@ -2,55 +2,36 @@ package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.JsonValue;
-import pitheguy.countycolor.metadata.StateBorders;
+import pitheguy.countycolor.metadata.StateData;
 import pitheguy.countycolor.render.PolygonCollection;
+import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.util.RenderUtil;
-import pitheguy.countycolor.util.Util;
 
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.function.Predicate;
+
+import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class CountryRenderer extends RegionRenderer {
-    public static final List<String> FILTERED_STATES = List.of(
-        "Guam",
-        "Puerto Rico",
-        "American Samoa",
-        "United States Virgin Islands",
-        "Commonwealth of the Northern Mariana Islands",
-        "District of Columbia"
-    );
-
-    public static final List<String> RENDERED_SEPARATELY = List.of("Alaska", "Hawaii");
-
-    public CountryRenderer() {
-        super(StateBorders.getJson(), properties -> !FILTERED_STATES.contains(properties.getString("NAME")));
-    }
+    private Map<String, PolygonCollection> states;
 
     public void renderCountry(OrthographicCamera camera) {
         ensureLoadingFinished();
         updateCamera(camera);
-        renderRegion(camera, false, true);
+        renderRegion(states.values(), camera, false, true);
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        JsonValue array = Util.getFutureValue(sourceJson).get("features");
-        Map<String, PolygonCollection> shapes = new HashMap<>();
+    protected void loadShapes() {
+        Map<String, PolygonCollection> rawStates = new HashMap<>(StateData.getStates());
         Map<String, PolygonCollection> renderedSeparately = new HashMap<>();
-        for (JsonValue subregion : array) {
-            JsonValue properties = subregion.get("properties");
-            if (!predicate.test(properties)) continue;
-            String subregionName = properties.getString("NAME");
-            PolygonCollection polygons = loadSubregion(subregion);
-            if (subregionName.equals("Alaska")) RenderUtil.fixRollover(polygons);
-            if (RENDERED_SEPARATELY.contains(subregionName)) renderedSeparately.put(subregionName, polygons);
-            else shapes.put(subregionName, polygons);
-        }
-        Map<String, PolygonCollection> relativeShapes = relativize(shapes);
-        addRenderedSeparately(relativeShapes, renderedSeparately);
-        return relativeShapes;
+        StateData.RENDERED_SEPARATELY.forEach(key -> {
+            renderedSeparately.put(key, rawStates.get(key));
+            rawStates.remove(key);
+        });
+        RenderUtil.fixRollover(renderedSeparately.get("Alaska"));
+        Map<String, PolygonCollection> relativeStates = relativize(rawStates);
+        addRenderedSeparately(relativeStates, renderedSeparately);
+        states = relativeStates;
     }
 
     private void addRenderedSeparately(Map<String, PolygonCollection> map, Map<String, PolygonCollection> renderedSeparately) {
@@ -73,5 +54,20 @@ public class CountryRenderer extends RegionRenderer {
             map.put(entry.getKey(), new PolygonCollection(relativeShapes));
             i++;
         }
+    }
+
+    public String getStateAtCoords(Vector2 coordinate) {
+        for (Map.Entry<String, PolygonCollection> entry : states.entrySet()) {
+            PolygonCollection subregion = entry.getValue();
+            if (!subregion.boundsCheck(coordinate)) continue;
+            for (List<Vector2> polygon : subregion.getPolygons())
+                if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RENDER_SIZE), polygon))
+                    return entry.getKey();
+        }
+        return null;
+    }
+
+    public Zoom getTargetZoom(String state) {
+        return getTargetZoom(states.get(state));
     }
 }

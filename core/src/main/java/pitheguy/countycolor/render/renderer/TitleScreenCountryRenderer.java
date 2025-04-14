@@ -5,34 +5,21 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.metadata.CountyBorders;
+import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderCachingHelper;
 
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class TitleScreenCountryRenderer extends RegionRenderer {
-    private static final List<String> HIDDEN_STATES = List.of(
-        "Guam",
-        "Puerto Rico",
-        "American Samoa",
-        "United States Virgin Islands",
-        "Commonwealth of the Northern Mariana Islands",
-        "District of Columbia",
-        "Alaska",
-        "Hawaii"
-    );
     private static final int NUM_FILLED_COUNTIES = 400;
 
-    private final RenderCachingHelper cachingHelper;
+    private final RenderCachingHelper cachingHelper = new RenderCachingHelper();
     private final Map<String, MapColor> filledCounties = new HashMap<>();
-
-
-    public TitleScreenCountryRenderer() {
-        super(CountyBorders.getJson(), properties -> !HIDDEN_STATES.contains(StateRenderer.getStateFromId(properties.getString("STATEFP"))), "STATEFP");
-        cachingHelper = new RenderCachingHelper();
-    }
+    private Map<String, PolygonCollection> counties;
 
     public void render(OrthographicCamera camera) {
         cachingHelper.render(camera, this::renderInternal);
@@ -43,22 +30,21 @@ public class TitleScreenCountryRenderer extends RegionRenderer {
         updateCamera(camera);
         renderBackground();
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        filledCounties.forEach((county, color) -> fillSubregion(county, color.getColor()));
+        filledCounties.forEach((county, color) -> fillSubregion(counties.get(county), color.getColor()));
         shapeRenderer.end();
-        renderRegion(camera, false, false);
+        renderRegion(counties.values(), camera, false, false);
     }
 
     @Override
-    protected Map<String, PolygonCollection> loadShapes(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        Map<String, PolygonCollection> shapes = super.loadShapes(sourceJson, predicate, duplicatePreventionKey);
-        List<String> keys = new ArrayList<>(shapes.keySet());
+    protected void loadShapes() {
+        counties = relativize(CountyData.getCounties(false).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getPolygons())));
+        List<String> keys = new ArrayList<>(counties.keySet());
         Collections.shuffle(keys);
         Random random = new Random();
         for (String key : keys.subList(0, NUM_FILLED_COUNTIES)) {
             MapColor color = MapColor.values()[random.nextInt(MapColor.values().length)];
             filledCounties.put(key, color);
         }
-        return shapes;
     }
 
     public void invalidateCache() {

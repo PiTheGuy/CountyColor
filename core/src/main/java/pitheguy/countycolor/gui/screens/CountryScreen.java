@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
@@ -14,7 +13,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.gui.components.InfoTooltip;
 import pitheguy.countycolor.render.Zoom;
@@ -110,7 +108,7 @@ public class CountryScreen implements Screen, InputProcessor {
         completedCountiesRenderer.render(camera, completedCounties);
         renderer.renderCountry(camera);
         tooltip.hide();
-        String selectedState = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
+        String selectedState = renderer.getStateAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedState != null && !transitionHelper.isInTransition())
             tooltip.show(stage, selectedState, getCompletionCountString(selectedState));
         stage.act(delta);
@@ -126,7 +124,7 @@ public class CountryScreen implements Screen, InputProcessor {
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        String selectedState = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
+        String selectedState = renderer.getStateAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedState == null) return false;
         Zoom zoom = renderer.getTargetZoom(selectedState);
         transitionHelper.transition(zoom.center(), zoom.zoom(), new StateScreen(game, selectedState, this), false);

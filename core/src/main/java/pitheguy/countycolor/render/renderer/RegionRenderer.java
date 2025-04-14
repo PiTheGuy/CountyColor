@@ -20,26 +20,21 @@ import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 public abstract class RegionRenderer implements Disposable {
     private static final ExecutorService SHAPE_LOAD_EXECUTOR = Executors.newCachedThreadPool();
 
-    private final Future<Map<String, PolygonCollection>> shapesFuture;
+    private final Future<?> future;
     protected Map<String, PolygonCollection> shapes;
     protected final ShapeRenderer shapeRenderer = new ShapeRenderer();
     protected final Map<List<Vector2>, ShortArray> triangles = new HashMap<>();
 
-
-    public RegionRenderer(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate) {
-        this(sourceJson, predicate, null);
+    public RegionRenderer() {
+        future = loadShapesAsync();
     }
 
-    public RegionRenderer(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        shapesFuture = loadShapesAsync(sourceJson, predicate, duplicatePreventionKey);
-    }
-
-    protected void renderRegion(OrthographicCamera camera, boolean thick, boolean scaleThickness) {
+    protected void renderRegion(Collection<PolygonCollection> subregions, OrthographicCamera camera, boolean thick, boolean scaleThickness) {
         ensureLoadingFinished();
         shapeRenderer.begin(thick ? ShapeRenderer.ShapeType.Filled : ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.BLACK);
-        for (String subregion : shapes.keySet()) {
-            if (!shapes.get(subregion).isVisibleToCamera(camera)) continue;
+        for (PolygonCollection subregion : subregions) {
+            if (!subregion.isVisibleToCamera(camera)) continue;
             if (thick) renderThickSubregionOutline(subregion, scaleThickness ? OUTLINE_THICKNESS * camera.zoom : OUTLINE_THICKNESS);
             else renderSubregionOutline(subregion);
         }
@@ -51,9 +46,8 @@ public abstract class RegionRenderer implements Disposable {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
     }
 
-    protected void renderSubregionOutline(String subregion) {
-        PolygonCollection subregionPolygons = shapes.get(subregion);
-        for (List<Vector2> points : subregionPolygons.getPolygons()) {
+    protected void renderSubregionOutline(PolygonCollection subregion) {
+        for (List<Vector2> points : subregion.getPolygons()) {
             for (int i = 0; i < points.size() - 1; i++) {
                 Vector2 point = points.get(i);
                 Vector2 endPoint = points.get(i + 1);
@@ -62,55 +56,34 @@ public abstract class RegionRenderer implements Disposable {
         }
     }
 
-    protected void renderThickSubregionOutline(String subregion, float thickness) {
-        PolygonCollection subregionPolygons = shapes.get(subregion);
-        for (List<Vector2> points : subregionPolygons.getPolygons())
+    protected void renderThickSubregionOutline(PolygonCollection subregion, float thickness) {
+        for (List<Vector2> points : subregion.getPolygons())
             RenderUtil.drawThickPolyline(shapeRenderer, points, thickness);
     }
 
-    protected void fillSubregion(String subregion, Color color) {
+    protected void fillSubregion(PolygonCollection subregion, Color color) {
         ensureLoadingFinished();
         shapeRenderer.setColor(color);
-        PolygonCollection subregions = shapes.get(subregion);
-        if (subregions == null) {
-            Gdx.app.log("RegionRenderer", "Subregion '" + subregion + "' could not be found");
-            return;
-        }
-        for (List<Vector2> points : subregions.getPolygons()) {
+        for (List<Vector2> points : subregion.getPolygons())
             RenderUtil.renderFilledPolygon(shapeRenderer, points, triangles.computeIfAbsent(points, RenderUtil::triangulate), 1);
-        }
     }
 
     protected void updateCamera(OrthographicCamera camera) {
         shapeRenderer.setProjectionMatrix(camera.combined);
     }
 
-    private Future<Map<String, PolygonCollection>> loadShapesAsync(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        return SHAPE_LOAD_EXECUTOR.submit(() -> loadShapes(sourceJson, predicate, duplicatePreventionKey));
+    private Future<?> loadShapesAsync() {
+        return SHAPE_LOAD_EXECUTOR.submit(this::loadShapes);
     }
 
-    protected Map<String, PolygonCollection> loadShapes(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
-        JsonValue array = Util.getFutureValue(sourceJson).get("features");
-        Map<String, PolygonCollection> shapes = new HashMap<>();
-        for (JsonValue subregion : array) {
-            JsonValue properties = subregion.get("properties");
-            if (!predicate.test(properties)) continue;
-            String subregionName = properties.getString("NAME");
-            String duplicatePrevention = duplicatePreventionKey == null ? "" : properties.getString(duplicatePreventionKey);
-            PolygonCollection polygons = loadSubregion(subregion);
-            shapes.put(subregionName + duplicatePrevention, polygons);
-            postProcessJson(subregion);
-        }
-        postProcessShapes(shapes);
-        return relativize(shapes);
-    }
+    protected abstract void loadShapes();
 
     protected void postProcessJson(JsonValue json) {}
 
     protected void postProcessShapes(Map<String, PolygonCollection> shapes) {
     }
 
-    protected static PolygonCollection loadSubregion(JsonValue subregion) {
+    public static PolygonCollection loadSubregion(JsonValue subregion) {
         JsonValue geometry = subregion.get("geometry");
         String type = geometry.getString("type");
         JsonValue coordinates = geometry.get("coordinates");
@@ -142,11 +115,11 @@ public abstract class RegionRenderer implements Disposable {
     }
 
     public void ensureLoadingFinished() {
-        if (shapes == null) shapes = Util.getFutureValue(shapesFuture);
+        if (!future.isDone()) Util.getFutureValue(future);
     }
 
     public boolean isDoneLoading() {
-        return shapesFuture.isDone();
+        return future.isDone();
     }
 
 
@@ -192,23 +165,11 @@ public abstract class RegionRenderer implements Disposable {
         return new Vector2(x, y);
     }
 
-    public String getSubregionAtCoords(Vector2 coordinate) {
-        for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
-            PolygonCollection subregion = entry.getValue();
-            if (!subregion.boundsCheck(coordinate)) continue;
-            for (List<Vector2> polygon : subregion.getPolygons())
-                if (RenderUtil.pointInPolygon(coordinate.cpy().scl(2f / RENDER_SIZE), polygon))
-                    return entry.getKey();
-        }
-        return null;
-    }
-
-    public Zoom getTargetZoom(String subregion) {
-        PolygonCollection subregionPolygons = shapes.get(subregion);
-        float minX = subregionPolygons.getMinX();
-        float minY = subregionPolygons.getMinY();
-        float maxX = subregionPolygons.getMaxX();
-        float maxY = subregionPolygons.getMaxY();
+    public Zoom getTargetZoom(PolygonCollection subregion) {
+        float minX = subregion.getMinX();
+        float minY = subregion.getMinY();
+        float maxX = subregion.getMaxX();
+        float maxY = subregion.getMaxY();
         float xRange = (maxX - minX) / 2;
         float yRange = (maxY - minY) / 2;
         float zoom = Math.max(xRange, yRange) * RENDER_SIZE / Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());

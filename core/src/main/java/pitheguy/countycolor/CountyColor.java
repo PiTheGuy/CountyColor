@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import pitheguy.countycolor.gui.screens.TitleScreen;
+import pitheguy.countycolor.metadata.CountyData;
+import pitheguy.countycolor.metadata.StateData;
 import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.util.Util;
 

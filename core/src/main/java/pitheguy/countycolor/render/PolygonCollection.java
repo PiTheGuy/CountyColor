@@ -90,4 +90,14 @@ public class PolygonCollection {
         return sharedEdges;
     }
 
+    public PolygonCollection copy() {
+        List<List<Vector2>> newPolygons = new ArrayList<>();
+        for (List<Vector2> polygon : polygons) {
+            List<Vector2> newPolygon = new ArrayList<>(polygon);
+            newPolygon.replaceAll(Vector2::cpy);
+            newPolygons.add(newPolygon);
+        }
+        return new PolygonCollection(newPolygons);
+    }
+
 }

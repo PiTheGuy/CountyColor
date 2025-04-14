@@ -5,10 +5,9 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.JsonValue;
-import pitheguy.countycolor.coloring.CountyData;
+import pitheguy.countycolor.coloring.CountyCompletionData;
 import pitheguy.countycolor.coloring.MapColor;
-import pitheguy.countycolor.metadata.CountyBorders;
+import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.metadata.StateBorders;
 import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.render.PolygonCollection;
@@ -19,26 +18,20 @@ import pitheguy.countycolor.util.Util;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static pitheguy.countycolor.render.util.RenderConst.OUTLINE_THICKNESS;
 
 public class StateRenderer extends CountyLevelRenderer {
-    private static final Map<String, String> STATE_TO_ID = new HashMap<>();
-    private static final Map<String, String> ID_TO_STATE = new HashMap<>();
-    static {
-        initStateIdMap();
-    }
     private final BooleanSupplier useCachedTexture;
     private final BooleanSupplier renderHoveringCounty;
     private final Future<Map<String, Map<String, MapColor>>> completedCounties;
     private final String state;
     private final RenderCachingHelper cachingHelper;
-    private Map<String, PolygonCollection> auxiliaryShapes;
+    private Map<String, CountyData.County> auxiliaryCounties;
 
 
     public StateRenderer(String state, BooleanSupplier useCachedTexture, BooleanSupplier renderHoveringCounty, Future<Map<String, Map<String, MapColor>>> completedCounties) {
-        super(CountyBorders.getJson(), properties -> properties.getString("STATEFP").equals(STATE_TO_ID.get(state)));
         this.state = state;
         this.useCachedTexture = useCachedTexture;
         this.renderHoveringCounty = renderHoveringCounty;
@@ -46,32 +39,32 @@ public class StateRenderer extends CountyLevelRenderer {
         this.cachingHelper = new RenderCachingHelper();
     }
 
-    public void renderState(OrthographicCamera camera, CountyData countyData) {
+    public void renderState(OrthographicCamera camera, CountyCompletionData countyCompletionData) {
         renderBackground();
         shapeRenderer.setProjectionMatrix(camera.combined);
-        if (useCachedTexture.getAsBoolean()) cachingHelper.render(camera, cam -> renderStateInternal(cam, countyData));
-        else renderStateInternal(camera, countyData);
+        if (useCachedTexture.getAsBoolean()) cachingHelper.render(camera, cam -> renderStateInternal(cam, countyCompletionData));
+        else renderStateInternal(camera, countyCompletionData);
         if (renderHoveringCounty.getAsBoolean()) {
-            String hoveringCounty = getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
-            if (hoveringCounty != null && !countyData.get(hoveringCounty).isCompleted()) {
+            CountyData.County hoveringCounty = getCountyAtCoords(RenderUtil.getMouseWorldCoords(camera));
+            if (hoveringCounty != null && !countyCompletionData.get(hoveringCounty.getName()).isCompleted()) {
                 shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                fillSubregion(hoveringCounty, new Color(0.95f, 0.95f, 0.95f, 1f));
+                fillSubregion(hoveringCounty.getPolygons(), new Color(0.95f, 0.95f, 0.95f, 1f));
                 shapeRenderer.setColor(Color.BLACK);
-                renderThickSubregionOutline(hoveringCounty, OUTLINE_THICKNESS * camera.zoom);
+                renderThickSubregionOutline(hoveringCounty.getPolygons(), OUTLINE_THICKNESS * camera.zoom);
                 shapeRenderer.end();
-                renderIndependentCities(camera, true, true, name -> !name.equals(hoveringCounty) && shapes.get(name).boundingBoxOverlaps(shapes.get(hoveringCounty)));
+                renderIndependentCities(camera, true, true, county -> !county.equals(hoveringCounty) && county.getPolygons().boundingBoxOverlaps(hoveringCounty.getPolygons()));
             }
         }
     }
 
-    private void renderStateInternal(OrthographicCamera camera, CountyData countyData) {
+    private void renderStateInternal(OrthographicCamera camera, CountyCompletionData countyCompletionData) {
         ensureLoadingFinished();
         updateCamera(camera);
         renderBackground();
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        for (String county : shapes.keySet())
-            if (shapes.get(county).isVisibleToCamera(camera) && countyData.get(county).isCompleted())
-                fillSubregion(county, countyData.get(county).mapColor().getColor());
+        for (CountyData.County county : counties.values())
+            if (county.getPolygons().isVisibleToCamera(camera) && countyCompletionData.get(county.getName()).isCompleted())
+                fillSubregion(county.getPolygons(), countyCompletionData.get(county.getName()).mapColor().getColor());
         shapeRenderer.end();
         renderRegion(camera, true, true);
         if (Options.NEIGHBOR_BORDER_COLORS.get()) renderNeighborBorderColors(camera);
@@ -81,16 +74,17 @@ public class StateRenderer extends CountyLevelRenderer {
         if (!completedCounties.isDone()) return;
         Map<String, Map<String, MapColor>> completedCountiesMap = Util.getFutureValue(completedCounties);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        for (String inStateCounty : shapes.keySet()) {
-            PolygonCollection inPoly = auxiliaryShapes.get(getIdForState(state) + inStateCounty);
-            for (Map.Entry<String, PolygonCollection> entry : auxiliaryShapes.entrySet()) {
+        for (String inStateCounty : counties.keySet()) {
+            PolygonCollection inPoly = auxiliaryCounties.get(inStateCounty + "," + state).getPolygons();
+            for (Map.Entry<String, CountyData.County> entry : auxiliaryCounties.entrySet()) {
                 String outCounty = entry.getKey();
-                PolygonCollection outPoly = entry.getValue();
-                String outState = getStateFromId(outCounty.substring(0, 2));
+                PolygonCollection outPoly = entry.getValue().getPolygons();
+                String outCountyName = outCounty.split(",")[0];
+                String outState = outCounty.split(",")[1];
                 if (outState.equals(state)) continue;
                 if (!completedCountiesMap.containsKey(outState)) continue;
-                if (inPoly.isAdjacentTo(outPoly) && completedCountiesMap.get(outState).containsKey(outCounty.substring(2))) {
-                    drawSharedBorder(inPoly, outPoly, completedCountiesMap.get(outState).get(outCounty.substring(2)), camera.zoom);
+                if (inPoly.isAdjacentTo(outPoly) && completedCountiesMap.get(outState).containsKey(outCountyName)) {
+                    drawSharedBorder(inPoly, outPoly, completedCountiesMap.get(outState).get(outCountyName), camera.zoom);
                 }
             }
         }
@@ -109,56 +103,37 @@ public class StateRenderer extends CountyLevelRenderer {
         cachingHelper.invalidateCache();
     }
 
-    public List<String> getBorderingCounties(String county) {
-        PolygonCollection polygons = shapes.get(county);
+    public List<String> getBorderingCounties(CountyData.County county) {
         List<String> borderingCounties = new ArrayList<>();
-        for (Map.Entry<String, PolygonCollection> entry : shapes.entrySet()) {
-            if (entry.getKey().equals(county)) continue;
-            PolygonCollection other = entry.getValue();
-            if (polygons.isAdjacentTo(other)) borderingCounties.add(entry.getKey());
+        for (Map.Entry<String, CountyData.County> entry : counties.entrySet()) {
+            if (entry.getValue().equals(county)) continue;
+            CountyData.County other = entry.getValue();
+            if (county.getPolygons().isAdjacentTo(other.getPolygons())) borderingCounties.add(entry.getKey());
         }
         return borderingCounties;
     }
 
-    private static void initStateIdMap() {
-        String[] mappings = Gdx.files.internal("metadata/state_ids.txt").readString().split("\n");
-        for (String mapping : mappings) {
-            String[] parts = mapping.split("=");
-            STATE_TO_ID.put(parts[0], parts[1]);
-            ID_TO_STATE.put(parts[1], parts[0]);
-        }
-    }
-
-    public static String getIdForState(String state) {
-        return STATE_TO_ID.get(state);
-    }
-
-    public static String getStateFromId(String id) {
-        return ID_TO_STATE.get(id);
-    }
-
     @Override
-    protected Map<String, PolygonCollection> loadShapes(Future<JsonValue> sourceJson, Predicate<JsonValue> predicate, String duplicatePreventionKey) {
+    protected void loadShapes() {
         List<String> borderingStates = StateBorders.getBorderingStates(state);
-        JsonValue array = Util.getFutureValue(sourceJson).get("features");
-        Map<String, PolygonCollection> shapes = new HashMap<>();
-        auxiliaryShapes = new HashMap<>();
-        for (JsonValue subregion : array) {
-            JsonValue properties = subregion.get("properties");
-            String stateId = properties.getString("STATEFP");
-            String state = getStateFromId(stateId);
-            if (!state.equals(this.state) && !borderingStates.contains(state)) continue;
-            String subregionName = properties.getString("NAME");
-            PolygonCollection polygons = loadSubregion(subregion);
-            if (state.equals(this.state)) {
-                shapes.put(subregionName, polygons);
-                postProcessJson(subregion);
-            }
-            auxiliaryShapes.put(stateId + subregionName, polygons);
-        }
-        postProcessShapes(shapes);
-        auxiliaryShapes = relativize(auxiliaryShapes, shapes);
-        return relativize(shapes);
+        Map<String, CountyData.County> currentStateCounties = CountyData.getCountiesForState(state);
+        List<Map<String, CountyData.County>> borderingStateCounties = borderingStates.stream().map(CountyData::getCountiesForState).collect(Collectors.toList());
+        borderingStateCounties.add(currentStateCounties);
+        auxiliaryCounties = new HashMap<>();
+        borderingStateCounties.stream().flatMap(map -> map.values().stream()).forEach(county -> auxiliaryCounties.put(county.getName() + "," + county.getState(), county));
+        counties = rel(currentStateCounties);
+        auxiliaryCounties = rel(auxiliaryCounties, currentStateCounties);
+    }
+
+    public static Map<String, CountyData.County> rel(Map<String, CountyData.County> counties) {
+        return rel(counties, counties);
+    }
+
+    public static Map<String, CountyData.County> rel(Map<String, CountyData.County> counties, Map<String, CountyData.County> reference) {
+        Map<String, PolygonCollection> shapes = counties.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getPolygons()));
+        Map<String, PolygonCollection> refShapes = reference.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getPolygons()));
+        Map<String, PolygonCollection> newShapes = relativize(shapes, refShapes);
+        return counties.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().withPolygons(newShapes.get(entry.getKey()))));
     }
 
     @Override

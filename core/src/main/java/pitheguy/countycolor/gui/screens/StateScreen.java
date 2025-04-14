@@ -7,9 +7,10 @@ import com.badlogic.gdx.scenes.scene2d.*;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import pitheguy.countycolor.coloring.CountyData;
+import pitheguy.countycolor.coloring.CountyCompletionData;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.gui.components.InfoTooltip;
+import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.options.Options;
 import pitheguy.countycolor.render.Zoom;
 import pitheguy.countycolor.render.renderer.StateRenderer;
@@ -30,11 +31,11 @@ public class StateScreen implements Screen, InputProcessor {
     private final CameraTransitionHelper transitionHelper;
     private final Skin skin = new Skin(Gdx.files.internal("skin/skin.json"));
     private float maxZoom;
-    private CountyData countyData;
-    private final Future<CountyData> countyDataFuture;
+    private CountyCompletionData countyCompletionData;
+    private final Future<CountyCompletionData> countyDataFuture;
     private final Stage stage;
     private boolean pendingColorSelection;
-    private String pendingCounty;
+    private CountyData.County pendingCounty;
     private final InfoTooltip infoTooltip = new InfoTooltip(skin, true);
     private Texture arrowTexture;
     private Button backButton;
@@ -53,7 +54,7 @@ public class StateScreen implements Screen, InputProcessor {
         camera.update();
         transitionHelper = new CameraTransitionHelper(game, camera);
         renderer = new StateRenderer(state, () -> camera.zoom == maxZoom, () -> camera.zoom == maxZoom, countryScreen.getCompletedCounties());
-        countyDataFuture = CountyData.loadAsync(state);
+        countyDataFuture = CountyCompletionData.loadAsync(state);
         stage = new Stage(new ScreenViewport());
         resetStage();
     }
@@ -70,14 +71,14 @@ public class StateScreen implements Screen, InputProcessor {
     public void render(float delta) {
         ensureLoadingFinished();
         transitionHelper.update(delta);
-        renderer.renderState(camera, countyData);
+        renderer.renderState(camera, countyCompletionData);
         infoTooltip.hide();
         if (pendingCounty == null) {
-            String hoveringCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
+            CountyData.County hoveringCounty = renderer.getCountyAtCoords(RenderUtil.getMouseWorldCoords(camera));
             if (hoveringCounty != null) {
-                String displayName = renderer.isIndependentCity(hoveringCounty) && !hoveringCounty.endsWith("*") ? hoveringCounty + "*" : hoveringCounty;
-                String completionText = countyData.get(hoveringCounty).getCompletionString();
-                String text = (renderer.isIndependentCity(hoveringCounty) ? "*Independent City\n" : "") + completionText;
+                String displayName = hoveringCounty.isIndependentCity() && !hoveringCounty.getName().endsWith("*") ? hoveringCounty.getName() + "*" : hoveringCounty.getName();
+                String completionText = countyCompletionData.get(hoveringCounty.getName()).getCompletionString();
+                String text = (hoveringCounty.isIndependentCity() ? "*Independent City\n" : "") + completionText;
                 infoTooltip.show(stage, displayName, text);
             }
         }
@@ -92,8 +93,8 @@ public class StateScreen implements Screen, InputProcessor {
 
     private void updateCursor() {
         if (pendingCounty != null || camera.zoom != maxZoom) return;
-        String hoveringCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
-        if (hoveringCounty == null || countyData.get(hoveringCounty).isCompleted())
+        CountyData.County hoveringCounty = renderer.getCountyAtCoords(RenderUtil.getMouseWorldCoords(camera));
+        if (hoveringCounty == null || countyCompletionData.get(hoveringCounty.getName()).isCompleted())
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
         else Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Hand);
     }
@@ -131,7 +132,7 @@ public class StateScreen implements Screen, InputProcessor {
     }
 
     private void showColorSelection() {
-        CountyColorScreen nextScreen = new CountyColorScreen(game, pendingCounty, state, false);
+        CountyColorScreen nextScreen = new CountyColorScreen(game, pendingCounty.getName(), state, false);
         resetStage();
         Table table = new Table();
         table.setFillParent(true);
@@ -167,7 +168,7 @@ public class StateScreen implements Screen, InputProcessor {
         if (!Options.ENFORCE_MAP_COLORS.get()) return colors;
         List<String> borderingCounties = renderer.getBorderingCounties(pendingCounty);
         for (String county : borderingCounties) {
-            CountyData.Entry entry = countyData.get(county);
+            CountyCompletionData.Entry entry = countyCompletionData.get(county);
             if (!entry.isStarted()) continue;
             colors.remove(entry.mapColor());
         }
@@ -176,13 +177,13 @@ public class StateScreen implements Screen, InputProcessor {
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        String selectedCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
-        if (selectedCounty == null || countyData.get(selectedCounty).isCompleted()) return false;
+        CountyData.County selectedCounty = renderer.getCountyAtCoords(RenderUtil.getMouseWorldCoords(camera));
+        if (selectedCounty == null || countyCompletionData.get(selectedCounty.getName()).isCompleted()) return false;
         if (selectedCounty.equals(pendingCounty)) return false;
-        Zoom zoom = renderer.getTargetZoom(selectedCounty);
+        Zoom zoom = renderer.getTargetZoom(selectedCounty.getPolygons());
         resetStage();
-        if (countyData.get(selectedCounty).isStarted()) {
-            CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty, state, true);
+        if (countyCompletionData.get(selectedCounty.getName()).isStarted()) {
+            CountyColorScreen targetScreen = new CountyColorScreen(game, selectedCounty.getName(), state, true);
             transitionHelper.transition(zoom.center(), zoom.zoom(), targetScreen, false);
         } else {
             transitionHelper.transition(zoom.center(), zoom.zoom(), null, false);
@@ -194,7 +195,7 @@ public class StateScreen implements Screen, InputProcessor {
     }
 
     private void ensureLoadingFinished() {
-        if (countyData == null) countyData = Util.getFutureValue(countyDataFuture);
+        if (countyCompletionData == null) countyCompletionData = Util.getFutureValue(countyDataFuture);
     }
 
     @Override
