@@ -71,8 +71,12 @@ public abstract class RegionRenderer implements Disposable {
     protected void fillSubregion(String subregion, Color color) {
         ensureLoadingFinished();
         shapeRenderer.setColor(color);
-        PolygonCollection state = shapes.get(subregion);
-        for (List<Vector2> points : state.getPolygons()) {
+        PolygonCollection subregions = shapes.get(subregion);
+        if (subregions == null) {
+            Gdx.app.log("RegionRenderer", "Subregion '" + subregion + "' could not be found");
+            return;
+        }
+        for (List<Vector2> points : subregions.getPolygons()) {
             RenderUtil.renderFilledPolygon(shapeRenderer, points, triangles.computeIfAbsent(points, RenderUtil::triangulate), 1);
         }
     }

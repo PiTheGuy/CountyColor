@@ -75,7 +75,7 @@ public class StateScreen implements Screen, InputProcessor {
         if (pendingCounty == null) {
             String hoveringCounty = renderer.getSubregionAtCoords(RenderUtil.getMouseWorldCoords(camera));
             if (hoveringCounty != null) {
-                String displayName = renderer.isIndependentCity(hoveringCounty) ? hoveringCounty + "*" : hoveringCounty;
+                String displayName = renderer.isIndependentCity(hoveringCounty) && !hoveringCounty.endsWith("*") ? hoveringCounty + "*" : hoveringCounty;
                 String completionText = countyData.get(hoveringCounty).getCompletionString();
                 String text = (renderer.isIndependentCity(hoveringCounty) ? "*Independent City\n" : "") + completionText;
                 infoTooltip.show(stage, displayName, text);
