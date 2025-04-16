@@ -53,17 +53,19 @@ public class CountyData {
         private final String fullName;
         private final String state;
         private final String id;
+        private final String geoId;
 
-        public County(PolygonCollection polygons, String name, String fullName, String state, String id) {
+        public County(PolygonCollection polygons, String name, String fullName, String state, String id, String geoId) {
             this.polygons = polygons;
             this.name = name;
             this.fullName = fullName;
             this.state = state;
             this.id = id;
+            this.geoId = geoId;
         }
 
         public County(PolygonCollection polygons, JsonValue properties) {
-            this(polygons, properties.getString("NAME"), properties.getString("NAMELSAD"), properties.getString("STATE_NAME"), properties.getString("COUNTYFP"));
+            this(polygons, properties.getString("NAME"), properties.getString("NAMELSAD"), properties.getString("STATE_NAME"), properties.getString("COUNTYFP"), properties.getString("GEOID"));
         }
 
         public PolygonCollection getPolygons() {
@@ -86,12 +88,16 @@ public class CountyData {
             return id;
         }
 
+        public String getGeoId() {
+            return geoId;
+        }
+
         public boolean isIndependentCity() {
             return Integer.parseInt(id) > 500;
         }
 
         public County withPolygons(PolygonCollection polygons) {
-            return new County(polygons, name, fullName, state, id);
+            return new County(polygons, name, fullName, state, id, geoId);
         }
     }
 }

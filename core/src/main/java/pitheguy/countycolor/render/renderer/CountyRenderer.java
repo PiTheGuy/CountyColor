@@ -2,10 +2,13 @@ package pitheguy.countycolor.render.renderer;
 
 import clipper2.core.*;
 import clipper2.offset.*;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.JsonReader;
+import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
@@ -18,6 +21,7 @@ import static pitheguy.countycolor.render.util.RenderConst.*;
 public class CountyRenderer extends CountyLevelRenderer {
     private final CountyData.County county;
     private float highlightTime = 0;
+    private PolygonCollection polygons;
 
     public CountyRenderer(CountyData.County county) {
         this.county = county;
@@ -29,15 +33,21 @@ public class CountyRenderer extends CountyLevelRenderer {
     }
 
     public void renderCounty(OrthographicCamera camera) {
+        ensureLoadingFinished();
         updateCamera(camera);
-        renderRegion(camera, true, false);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(Color.BLACK);
+        if (!polygons.isVisibleToCamera(camera)) return;
+        for (List<Vector2> points : polygons.getPolygons())
+            RenderUtil.drawThickPolylineCulled(camera, shapeRenderer, points, OUTLINE_THICKNESS, true);
+        shapeRenderer.end();
     }
 
     public void renderCountyFilled(OrthographicCamera camera, float scale, MapColor color) {
         ensureLoadingFinished();
         updateCamera(camera);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        for (List<Vector2> points : getCounty().getPolygons().getPolygons()) {
+        for (List<Vector2> points : polygons.getPolygons()) {
             shapeRenderer.setColor(color.getColor());
             RenderUtil.renderFilledPolygon(shapeRenderer, points, triangles.computeIfAbsent(points, RenderUtil::triangulate), scale);
             shapeRenderer.setColor(Color.BLACK);
@@ -62,6 +72,9 @@ public class CountyRenderer extends CountyLevelRenderer {
     @Override
     protected void loadShapes() {
         counties = StateRenderer.rel(Map.of(county.getName(), county));
+        JsonReader reader = new JsonReader();
+        JsonValue countyJson = reader.parse(Gdx.files.internal("metadata/counties/" + county.getGeoId() + ".json"));
+        polygons = relativize(Map.of(county.getName(), loadSubregion(countyJson))).entrySet().iterator().next().getValue();
     }
 
     public void highlightUncoloredAreas() {
@@ -75,7 +88,7 @@ public class CountyRenderer extends CountyLevelRenderer {
     }
 
     public boolean isCoordinateWithinCounty(Vector2 coordinate) {
-        return getCounty().getPolygons().contains(coordinate.cpy().scl(2f / RENDER_SIZE));
+        return polygons.contains(coordinate.cpy().scl(2f / RENDER_SIZE));
     }
 
     public int computeTotalGridSquares() {
@@ -83,7 +96,7 @@ public class CountyRenderer extends CountyLevelRenderer {
 
         float totalPerimeter = 0;
         float totalArea = 0;
-        for (List<Vector2> shape : getCounty().getPolygons().getPolygons()) {
+        for (List<Vector2> shape : polygons.getPolygons()) {
             totalPerimeter += RenderUtil.calculatePerimeter(shape);
             totalArea += RenderUtil.calculateArea(shape);
         }
@@ -94,7 +107,7 @@ public class CountyRenderer extends CountyLevelRenderer {
         int halfGridSize = coloringSize / 2;
         int total = 0;
         List<List<Vector2>> scaledPolygons = new ArrayList<>();
-        for (List<Vector2> poly : getCounty().getPolygons().getPolygons()) {
+        for (List<Vector2> poly : polygons.getPolygons()) {
             List<Vector2> scaled = new ArrayList<>();
             for (Vector2 p : poly) scaled.add(p.cpy().scl(RENDER_SIZE / 2f));
             List<List<Vector2>> shrunk = shrinkPolygon(scaled);

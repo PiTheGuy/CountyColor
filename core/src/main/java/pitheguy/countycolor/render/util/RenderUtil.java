@@ -11,7 +11,9 @@ import com.badlogic.gdx.utils.ShortArray;
 import pitheguy.countycolor.render.PolygonCollection;
 
 import java.util.List;
+import java.util.function.BiPredicate;
 
+import static pitheguy.countycolor.render.util.RenderConst.OUTLINE_THICKNESS;
 import static pitheguy.countycolor.render.util.RenderConst.RENDER_SIZE;
 
 public class RenderUtil {
@@ -35,11 +37,20 @@ public class RenderUtil {
     }
 
     public static void drawThickPolyline(ShapeRenderer renderer, List<Vector2> points, float thickness, boolean connect) {
+        drawThickPolyline(renderer, points, thickness, connect, (p1, p2) -> true);
+    }
+
+    public static void drawThickPolyline(ShapeRenderer renderer, List<Vector2> points, float thickness, boolean connect, BiPredicate<Vector2, Vector2> filter) {
         Vector2 lastV3 = null, lastV4 = null;
         for (int i = 0; i < (connect ? points.size() : points.size() - 1); i++) {
             Vector2 p1 = points.get(i);
             Vector2 p2 = points.get((i + 1) % points.size());
             if (p1.equals(p2)) p2 = points.get((i + 2) % points.size());
+            if (!filter.test(p1, p2)) {
+                lastV3 = null;
+                lastV4 = null;
+                continue;
+            }
             Vector2 direction = p2.cpy().sub(p1).nor();
             Vector2 perpendicular = new Vector2(-direction.y, direction.x).scl(thickness / 2f);
 
@@ -63,6 +74,25 @@ public class RenderUtil {
             lastV4 = v4;
         }
     }
+
+    public static void drawThickPolylineCulled(OrthographicCamera camera, ShapeRenderer renderer, List<Vector2> points, float thickness, boolean connect) {
+        drawThickPolyline(renderer, points, thickness, connect, (p1, p2) -> isVisibleToCamera(camera, p1, p2, true));
+    }
+
+    public static boolean isVisibleToCamera(OrthographicCamera camera, Vector2 point1, Vector2 point2, boolean scale) {
+        float camMinX = camera.position.x - (camera.viewportWidth * camera.zoom) / 2f;
+        float camMaxX = camera.position.x + (camera.viewportWidth * camera.zoom) / 2f;
+        float camMinY = camera.position.y - (camera.viewportHeight * camera.zoom) / 2f;
+        float camMaxY = camera.position.y + (camera.viewportHeight * camera.zoom) / 2f;
+        float scaleAmt = scale ? RENDER_SIZE / 2f : 1;
+        float minX = Math.min(point1.x, point2.x);
+        float maxX = Math.max(point1.x, point2.x);
+        float minY = Math.min(point1.y, point2.y);
+        float maxY = Math.max(point1.y, point2.y);
+        return maxX * scaleAmt + OUTLINE_THICKNESS >= camMinX && minX * scaleAmt - OUTLINE_THICKNESS <= camMaxX &&
+               maxY * scaleAmt + OUTLINE_THICKNESS >= camMinY && minY * scaleAmt - OUTLINE_THICKNESS <= camMaxY;
+    }
+
 
     public static ShortArray triangulate(List<Vector2> points) {
         float[] vertices = new float[points.size() * 2];
