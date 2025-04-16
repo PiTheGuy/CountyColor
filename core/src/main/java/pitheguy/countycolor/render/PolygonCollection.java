@@ -2,6 +2,7 @@ package pitheguy.countycolor.render;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
+import pitheguy.countycolor.render.util.RenderUtil;
 
 import java.util.*;
 
@@ -90,14 +91,11 @@ public class PolygonCollection {
         return sharedEdges;
     }
 
-    public PolygonCollection copy() {
-        List<List<Vector2>> newPolygons = new ArrayList<>();
-        for (List<Vector2> polygon : polygons) {
-            List<Vector2> newPolygon = new ArrayList<>(polygon);
-            newPolygon.replaceAll(Vector2::cpy);
-            newPolygons.add(newPolygon);
-        }
-        return new PolygonCollection(newPolygons);
+    public boolean contains(Vector2 point) {
+        if (!boundsCheck(point)) return false;
+        for (List<Vector2> polygon : polygons)
+            if (RenderUtil.pointInPolygon(point, polygon))
+                return true;
+        return false;
     }
-
 }

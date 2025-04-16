@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import pitheguy.countycolor.coloring.MapColor;
 import pitheguy.countycolor.metadata.CountyData;
+import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderUtil;
 
 import java.util.*;
@@ -74,7 +75,7 @@ public class CountyRenderer extends CountyLevelRenderer {
     }
 
     public boolean isCoordinateWithinCounty(Vector2 coordinate) {
-        return getCountyAtCoords(coordinate) != null;
+        return getCounty().getPolygons().contains(coordinate.cpy().scl(2f / RENDER_SIZE));
     }
 
     public int computeTotalGridSquares() {
