@@ -28,7 +28,7 @@ public class StateRenderer extends CountyLevelRenderer {
     private final String state;
     private final RenderCachingHelper cachingHelper;
     private Map<String, CountyData.County> auxiliaryCounties;
-
+    private Map<List<List<Vector2>>, MapColor> neighborBorderColors;
 
     public StateRenderer(String state, BooleanSupplier useCachedTexture, BooleanSupplier renderHoveringCounty, Future<Map<String, Map<String, MapColor>>> completedCounties) {
         this.state = state;
@@ -70,9 +70,19 @@ public class StateRenderer extends CountyLevelRenderer {
     }
 
     private void renderNeighborBorderColors(OrthographicCamera camera) {
-        if (!completedCounties.isDone()) return;
-        Map<String, Map<String, MapColor>> completedCountiesMap = Util.getFutureValue(completedCounties);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        for (Map.Entry<List<List<Vector2>>, MapColor> entry : neighborBorderColors.entrySet()) {
+            List<List<Vector2>> sharedEdges = entry.getKey();
+            shapeRenderer.setColor(entry.getValue().getColor());
+            for (List<Vector2> edge : sharedEdges)
+                RenderUtil.drawThickPolyline(shapeRenderer, edge, OUTLINE_THICKNESS * camera.zoom * 2, false);
+        }
+        shapeRenderer.end();
+    }
+
+    private void loadNeighborBorderColors() {
+        Map<String, Map<String, MapColor>> completedCountiesMap = Util.getFutureValue(completedCounties);
+        neighborBorderColors = new HashMap<>();
         for (String inStateCounty : counties.keySet()) {
             PolygonCollection inPoly = auxiliaryCounties.get(inStateCounty + "," + state).getPolygons();
             for (Map.Entry<String, CountyData.County> entry : auxiliaryCounties.entrySet()) {
@@ -83,20 +93,12 @@ public class StateRenderer extends CountyLevelRenderer {
                 if (outState.equals(state)) continue;
                 if (!completedCountiesMap.containsKey(outState)) continue;
                 if (inPoly.isAdjacentTo(outPoly) && completedCountiesMap.get(outState).containsKey(outCountyName)) {
-                    drawSharedBorder(inPoly, outPoly, completedCountiesMap.get(outState).get(outCountyName), camera.zoom);
+                    List<List<Vector2>> sharedEdges = inPoly.getSharedEdges(outPoly);
+                    neighborBorderColors.put(sharedEdges, completedCountiesMap.get(outState).get(outCountyName));
                 }
             }
         }
-        shapeRenderer.end();
     }
-
-    private void drawSharedBorder(PolygonCollection a, PolygonCollection b, MapColor color, float zoom) {
-        List<List<Vector2>> sharedEdges = a.getSharedEdges(b);
-        shapeRenderer.setColor(color.getColor());
-        for (List<Vector2> edge : sharedEdges)
-            RenderUtil.drawThickPolyline(shapeRenderer, edge, OUTLINE_THICKNESS * zoom * 2, false);
-    }
-
 
     public void invalidateCache() {
         cachingHelper.invalidateCache();
@@ -122,6 +124,7 @@ public class StateRenderer extends CountyLevelRenderer {
         borderingStateCounties.stream().flatMap(map -> map.values().stream()).forEach(county -> auxiliaryCounties.put(county.getName() + "," + county.getState(), county));
         counties = rel(currentStateCounties);
         auxiliaryCounties = rel(auxiliaryCounties, currentStateCounties);
+        if (Options.NEIGHBOR_BORDER_COLORS.get()) loadNeighborBorderColors();
     }
 
     public static Map<String, CountyData.County> rel(Map<String, CountyData.County> counties) {
