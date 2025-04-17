@@ -13,6 +13,7 @@ public class InfoTooltip extends Table {
         super(skin);
         setBackground("round-white");
         title = new Label("", skin);
+        title.setWrap(true);
         if (hasTitle) add(title).pad(5).width(200).left().row();
         text = new Label("", skin);
         text.setFontScale(hasTitle ? 0.5f : 0.75f);

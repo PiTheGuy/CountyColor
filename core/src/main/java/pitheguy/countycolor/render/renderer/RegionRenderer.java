@@ -108,7 +108,8 @@ public abstract class RegionRenderer implements Disposable {
     }
 
     public void ensureLoadingFinished() {
-        if (!future.isDone()) Util.getFutureValue(future);
+        Object result = Util.getFutureValue(future);
+        if (result instanceof Throwable) throw new RuntimeException("Failed to load shapes", (Throwable) result);
     }
 
     public boolean isDoneLoading() {
