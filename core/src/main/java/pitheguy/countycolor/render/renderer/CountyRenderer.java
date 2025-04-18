@@ -22,6 +22,7 @@ public class CountyRenderer extends CountyLevelRenderer {
     private final CountyData.County county;
     private float highlightTime = 0;
     private PolygonCollection polygons;
+    private int totalGridSquares = -1;
 
     public CountyRenderer(CountyData.County county) {
         this.county = county;
@@ -75,6 +76,7 @@ public class CountyRenderer extends CountyLevelRenderer {
         JsonReader reader = new JsonReader();
         JsonValue countyJson = reader.parse(Gdx.files.internal("metadata/counties/" + county.getGeoId() + ".json"));
         polygons = relativize(Map.of(county.getName(), loadSubregion(countyJson))).entrySet().iterator().next().getValue();
+        totalGridSquares = computeTotalGridSquares();
     }
 
     public void highlightUncoloredAreas() {
@@ -91,9 +93,12 @@ public class CountyRenderer extends CountyLevelRenderer {
         return polygons.contains(coordinate.cpy().scl(2f / RENDER_SIZE));
     }
 
-    public int computeTotalGridSquares() {
+    public int getTotalGridSquares() {
         ensureLoadingFinished();
+        return totalGridSquares;
+    }
 
+    private int computeTotalGridSquares() {
         float totalPerimeter = 0;
         float totalArea = 0;
         for (List<Vector2> shape : polygons.getPolygons()) {
@@ -107,12 +112,12 @@ public class CountyRenderer extends CountyLevelRenderer {
         int halfGridSize = coloringSize / 2;
         int total = 0;
         List<List<Vector2>> scaledPolygons = new ArrayList<>();
-        for (List<Vector2> poly : polygons.getPolygons()) {
+        polygons.getPolygons().parallelStream().forEach(poly -> {
             List<Vector2> scaled = new ArrayList<>();
             for (Vector2 p : poly) scaled.add(p.cpy().scl(RENDER_SIZE / 2f));
             List<List<Vector2>> shrunk = shrinkPolygon(scaled);
             scaledPolygons.addAll(shrunk);
-        }
+        });
         for (int gridY = 0; gridY < coloringSize; gridY++) {
             float worldY = ((float) gridY + 0.5f - halfGridSize) / COLORING_RESOLUTION;
             List<Interval> intervals = new ArrayList<>();

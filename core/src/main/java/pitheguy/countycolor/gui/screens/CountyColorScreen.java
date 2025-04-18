@@ -111,7 +111,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     @Override
     public void render(float delta) {
         if (totalPixels == -1)
-            totalPixels = countyRenderer.computeTotalGridSquares();
+            totalPixels = countyRenderer.getTotalGridSquares();
         camera.update();
         transitionHelper.update(delta);
         Gdx.gl.glClearColor(1, 1, 1, 1);
