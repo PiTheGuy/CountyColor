@@ -3,14 +3,11 @@ package pitheguy.countycolor.render.renderer;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import pitheguy.countycolor.coloring.MapColor;
-import pitheguy.countycolor.metadata.CountyBorders;
 import pitheguy.countycolor.metadata.CountyData;
-import pitheguy.countycolor.render.util.RenderCachingHelper;
 import pitheguy.countycolor.util.Util;
 
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.function.BooleanSupplier;
 
 public class CountryCompletedCountiesRenderer extends RegionRenderer {
     private Map<String, CountyData.County> counties;

@@ -2,16 +2,12 @@ package pitheguy.countycolor.render.renderer;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.coloring.MapColor;
-import pitheguy.countycolor.metadata.CountyBorders;
 import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.util.RenderCachingHelper;
 
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class TitleScreenCountryRenderer extends RegionRenderer {

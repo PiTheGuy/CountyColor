@@ -8,8 +8,6 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import pitheguy.countycolor.metadata.CountyData;
-import pitheguy.countycolor.metadata.StateData;
 import pitheguy.countycolor.render.renderer.TitleScreenCountryRenderer;
 import pitheguy.countycolor.render.util.RenderConst;
 import pitheguy.countycolor.util.InputManager;

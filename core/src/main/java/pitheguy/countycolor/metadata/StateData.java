@@ -5,7 +5,6 @@ import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.renderer.RegionRenderer;
-import pitheguy.countycolor.util.Util;
 
 import java.util.*;
 

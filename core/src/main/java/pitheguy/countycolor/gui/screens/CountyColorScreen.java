@@ -21,7 +21,7 @@ import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.render.util.*;
 import pitheguy.countycolor.util.*;
 
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
