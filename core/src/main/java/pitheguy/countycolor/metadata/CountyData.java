@@ -5,6 +5,7 @@ import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import pitheguy.countycolor.render.PolygonCollection;
 import pitheguy.countycolor.render.renderer.RegionRenderer;
+import pitheguy.countycolor.render.util.RenderUtil;
 
 import java.util.*;
 import java.util.function.Function;
@@ -24,6 +25,7 @@ public class CountyData {
             PolygonCollection polygons = RegionRenderer.loadSubregion(countyJson);
             County county = new County(polygons, properties);
             Map<String, County> stateMap = counties.computeIfAbsent(county.getState(), s -> new HashMap<>());
+            if (county.getState().equals("Alaska")) RenderUtil.fixRollover(polygons);
             stateMap.put(county.getName(), county);
         }
         CountyData.counties = Collections.unmodifiableMap(counties);
