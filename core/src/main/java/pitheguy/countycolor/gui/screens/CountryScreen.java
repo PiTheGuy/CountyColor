@@ -69,7 +69,7 @@ public class CountryScreen implements Screen, InputProcessor {
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new TitleScreen(game));
+                goBack();
             }
         });
         backButton.setSize(40, 40);
@@ -88,6 +88,13 @@ public class CountryScreen implements Screen, InputProcessor {
             completedCountiesRenderer.invalidateCache();
             inInitialTransition = false;
         });
+    }
+
+    private void goBack() {
+        if (transitionHelper.isInTransition()) {
+            transitionHelper.stopTransition();
+            transitionHelper.transition(new Vector2(0, 0), startZoom, null, false);
+        } else game.setScreen(new TitleScreen(game));
     }
 
     @Override
