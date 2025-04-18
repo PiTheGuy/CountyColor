@@ -19,10 +19,10 @@ import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.renderer.ColoringRenderer;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.render.util.*;
-import pitheguy.countycolor.util.InputManager;
-import pitheguy.countycolor.util.Util;
+import pitheguy.countycolor.util.*;
 
-import java.util.Base64;
+import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class CountyColorScreen implements Screen, InputProcessor {
@@ -140,6 +140,15 @@ public class CountyColorScreen implements Screen, InputProcessor {
         cursorRenderer.setColor(canColor() ? coloringGrid.getColor().getColor() : Color.RED);
         cursorRenderer.circle(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY(), brushSize / camera.zoom);
         cursorRenderer.end();
+        if (DebugFlags.RENDER_CURSOR_TEST_POINTS) {
+            cursorRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            cursorRenderer.setColor(Color.BLUE);
+            for (Vector2 point : getTestPoints(RenderUtil.getMouseWorldCoords(camera))) {
+                Vector3 projected = camera.project(new Vector3(point.x, point.y, 0));
+                cursorRenderer.circle(projected.x, projected.y, 2);
+            }
+            cursorRenderer.end();
+        }
     }
 
     private void renderProgressBar() {
@@ -243,26 +252,33 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     private boolean canColor() {
-        Vector2 center = RenderUtil.getMouseWorldCoords(camera);
-        return canColor(center);
+        return canColor(RenderUtil.getMouseWorldCoords(camera));
     }
 
     private boolean canColor(Vector2 pos) {
+        for (Vector2 point : getTestPoints(pos))
+            if (!countyRenderer.isCoordinateWithinCounty(point))
+                return false;
+        return true;
+    }
+
+    private List<Vector2> getTestPoints(Vector2 pos) {
+        List<Vector2> points = new ArrayList<>();
         int numPoints = getNumTestPoints();
         for (int i = 0; i < numPoints; i++) {
             float angle = (float)(i * Math.PI * 2 / numPoints); // 0 to 2π
             float dx = brushSize * (float)Math.cos(angle);
             float dy = brushSize * (float)Math.sin(angle);
             Vector2 offsetPoint = new Vector2(pos.x + dx, pos.y + dy);
-            if (!countyRenderer.isCoordinateWithinCounty(offsetPoint)) return false;
+            points.add(offsetPoint);
         }
-        return true;
+        return points;
     }
 
     private int getNumTestPoints() {
-        if (brushSize > 30) return (int) (brushSize * 5);
-        if (brushSize > 10) return 128;
-        return 64;
+        if (brushSize < 10) return (int) (brushSize * 10);
+        if (brushSize < 20) return (int) (brushSize * 8);
+        return (int) (brushSize * 5);
     }
 
     public float getCompletion() {
