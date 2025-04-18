@@ -183,7 +183,7 @@ public class CountryScreen implements Screen, InputProcessor {
 
     @Override
     public void show() {
-        InputManager.setInputProcessor(new InputMultiplexer(this, stage));
+        InputManager.setInputProcessor(new InputMultiplexer(stage, this));
         if (transitionHelper.isInTransition()) return;
         camera.zoom = startZoom;
         camera.position.set(0, 0, 0);
