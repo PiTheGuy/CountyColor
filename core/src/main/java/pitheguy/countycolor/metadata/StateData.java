@@ -28,7 +28,7 @@ public class StateData {
 
     public static void load() {
         JsonReader reader = new JsonReader();
-        JsonValue root = reader.parse(Gdx.files.internal("metadata/states.geojson"));
+        JsonValue root = reader.parse(Gdx.files.internal("metadata/states.json"));
         JsonValue array = root.get("features");
         Map<String, PolygonCollection> states = new HashMap<>();
         for (JsonValue stateJson : array) {

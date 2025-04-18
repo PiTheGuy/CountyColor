@@ -75,7 +75,7 @@ public class CountyData {
         }
 
         public String getName() {
-            return name;
+            return name + (isIndependentCity() ? "*" : "");
         }
 
         public String getFullName() {

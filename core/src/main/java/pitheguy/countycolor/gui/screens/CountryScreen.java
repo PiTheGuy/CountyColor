@@ -32,6 +32,7 @@ public class CountryScreen implements Screen, InputProcessor {
     private final OrthographicCamera camera;
     private final CountryRenderer renderer;
     private final CountryCompletedCountiesRenderer completedCountiesRenderer;
+    private final RenderCachingHelper cachingHelper = new RenderCachingHelper();
     private final CameraTransitionHelper transitionHelper;
     private final BitmapFont font = new BitmapFont();
     private final SpriteBatch batch = new SpriteBatch();
@@ -54,7 +55,7 @@ public class CountryScreen implements Screen, InputProcessor {
         camera.update();
         renderer = new CountryRenderer();
         transitionHelper = new CameraTransitionHelper(game, camera);
-        completedCountiesRenderer = new CountryCompletedCountiesRenderer(() -> camera.zoom > startZoom / 2 && !inInitialTransition);
+        completedCountiesRenderer = new CountryCompletedCountiesRenderer();
         stage = new Stage(new ScreenViewport());
         initStage();
     }
@@ -85,7 +86,7 @@ public class CountryScreen implements Screen, InputProcessor {
         camera.update();
         inInitialTransition = true;
         transitionHelper.transition(new Vector2(0, 0), startZoom, () -> {
-            completedCountiesRenderer.invalidateCache();
+            cachingHelper.invalidateCache();
             inInitialTransition = false;
         });
     }
@@ -99,6 +100,7 @@ public class CountryScreen implements Screen, InputProcessor {
 
     @Override
     public void dispose() {
+        cachingHelper.dispose();
         renderer.dispose();
         completedCountiesRenderer.dispose();
         font.dispose();
@@ -112,14 +114,19 @@ public class CountryScreen implements Screen, InputProcessor {
         Gdx.gl.glClearColor(1, 1, 1, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         transitionHelper.update(delta);
-        completedCountiesRenderer.render(camera, completedCounties);
-        renderer.renderCountry(camera);
+        if (camera.zoom == startZoom && !inInitialTransition) cachingHelper.render(camera, cam -> renderCountry(false));
+        else renderCountry(true);
         tooltip.hide();
         String selectedState = renderer.getStateAtCoords(RenderUtil.getMouseWorldCoords(camera));
         if (selectedState != null && !transitionHelper.isInTransition())
             tooltip.show(stage, selectedState, getCompletionCountString(selectedState));
         stage.act(delta);
         stage.draw();
+    }
+
+    private void renderCountry(boolean cull) {
+        completedCountiesRenderer.render(camera, completedCounties, cull);
+        renderer.renderCountry(camera);
     }
 
     private String getCompletionCountString(String state) {
@@ -148,7 +155,7 @@ public class CountryScreen implements Screen, InputProcessor {
         }
         camera.update();
         stage.getViewport().update(width, height, true);
-        completedCountiesRenderer.invalidateCache();
+        cachingHelper.invalidateCache();
     }
 
     private static void loadCountyCounts() {

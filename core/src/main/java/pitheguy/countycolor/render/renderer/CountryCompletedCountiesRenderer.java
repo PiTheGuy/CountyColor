@@ -13,22 +13,9 @@ import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
 
 public class CountryCompletedCountiesRenderer extends RegionRenderer {
-    private final RenderCachingHelper cachingHelper = new RenderCachingHelper();
-    private final BooleanSupplier usedCachedTexture;
     private Map<String, CountyData.County> counties;
 
-    public CountryCompletedCountiesRenderer(BooleanSupplier usedCachedTexture) {
-        this.usedCachedTexture = usedCachedTexture;
-    }
-
-    public void render(OrthographicCamera camera, Future<Map<String, Map<String, MapColor>>> completedCountiesFuture) {
-        if (!completedCountiesFuture.isDone()) return;
-        if (usedCachedTexture.getAsBoolean())
-            cachingHelper.render(camera, cam -> renderInternal(cam, completedCountiesFuture, false));
-        else renderInternal(camera, completedCountiesFuture, true);
-    }
-
-    private void renderInternal(OrthographicCamera camera, Future<Map<String, Map<String, MapColor>>> completedCountiesFuture, boolean cull) {
+    public void render(OrthographicCamera camera, Future<Map<String, Map<String, MapColor>>> completedCountiesFuture, boolean cull) {
         ensureLoadingFinished();
         updateCamera(camera);
         renderBackground();
@@ -47,18 +34,9 @@ public class CountryCompletedCountiesRenderer extends RegionRenderer {
         shapeRenderer.end();
     }
 
-    public void invalidateCache() {
-        cachingHelper.invalidateCache();
-    }
-
     @Override
     protected void loadShapes() {
         counties = StateRenderer.rel(CountyData.getCounties(true), CountyData.getCounties(false));
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        cachingHelper.dispose();
-    }
 }
