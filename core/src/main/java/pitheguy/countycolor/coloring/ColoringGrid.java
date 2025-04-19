@@ -18,6 +18,7 @@ import static pitheguy.countycolor.render.util.RenderConst.COLORING_RESOLUTION;
 import static pitheguy.countycolor.render.util.RenderConst.COLORING_SIZE;
 
 public class ColoringGrid implements Disposable {
+    private static final int BLOCK_SIZE = 100;
     private final Pixmap pixmap;
     private final BitSet bitSet;
     private MapColor color;
@@ -61,18 +62,50 @@ public class ColoringGrid implements Disposable {
     private byte[] encode() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
-        boolean current = bitSet.get(0);
-        int runLength = 1;
-        if (current) writeVarInt(0, dos);
-        for (int i = 1; i < COLORING_SIZE * COLORING_SIZE; i++) {
-            if (current == bitSet.get(i)) runLength++;
-            else {
-                writeVarInt(runLength, dos);
-                current = bitSet.get(i);
-                runLength = 1;
+        //noinspection ConstantValue
+        assert COLORING_SIZE % BLOCK_SIZE == 0;
+        for (int blockY = 0; blockY < COLORING_SIZE / BLOCK_SIZE; blockY++) {
+            for (int blockX = 0; blockX < COLORING_SIZE / BLOCK_SIZE; blockX++) {
+                boolean start = get(blockX * BLOCK_SIZE, blockY * BLOCK_SIZE);
+                boolean allSame = true;
+                loop:
+                for (int x = 0; x < BLOCK_SIZE; x++) {
+                    for (int y = 0; y < BLOCK_SIZE; y++) {
+                        if (get(blockX * BLOCK_SIZE + x, blockY * BLOCK_SIZE + y) != start) {
+                            allSame = false;
+                            break loop;
+                        }
+                    }
+                }
+                try {
+                    if (allSame) {
+                        dos.writeByte(start ? 2 : 1);
+                    } else {
+                        dos.writeByte(0);
+                        ByteArrayOutputStream rleStream = new ByteArrayOutputStream();
+                        DataOutputStream rleDataStream = new DataOutputStream(rleStream);
+                        boolean current = get(blockX * BLOCK_SIZE, blockY * BLOCK_SIZE);
+                        int runLength = 0;
+                        if (current) writeVarInt(0, rleDataStream);
+
+                        for (int y = 0; y < BLOCK_SIZE; y++) {
+                            for (int x = 0; x < BLOCK_SIZE; x++) {
+                                if (get(blockX * BLOCK_SIZE + x, blockY * BLOCK_SIZE + y) != current) {
+                                    writeVarInt(runLength, rleDataStream);
+                                    current = get(blockX * BLOCK_SIZE + x, blockY * BLOCK_SIZE + y);
+                                    runLength = 1;
+                                } else runLength++;
+                            }
+                        }
+                        writeVarInt(runLength, rleDataStream);
+                        byte[] rleBytes = rleStream.toByteArray();
+                        if (rleBytes[rleBytes.length - 1] == 0) System.out.println("Last byte was zero");
+                        dos.writeShort(rleBytes.length);
+                        dos.write(rleBytes);
+                    }
+                } catch (IOException ignored) {}
             }
         }
-        writeVarInt(runLength, dos);
         return Util.compress(baos.toByteArray());
     }
 
@@ -80,16 +113,38 @@ public class ColoringGrid implements Disposable {
         ByteArrayInputStream bais = new ByteArrayInputStream(Util.decompress(input));
         DataInputStream dis = new DataInputStream(bais);
         BitSet bitSet = new BitSet(COLORING_SIZE * COLORING_SIZE);
-        int index = 0;
-        boolean current = false;
-        try {
-            while (dis.available() > 0) {
-                int runLength = readVarInt(dis);
-                if (current) bitSet.flip(index, index + runLength);
-                index += runLength;
-                current = !current;
+        for (int blockY = 0; blockY < COLORING_SIZE / BLOCK_SIZE; blockY++) {
+            for (int blockX = 0; blockX < COLORING_SIZE / BLOCK_SIZE; blockX++) {
+                try {
+                    byte header = dis.readByte();
+                    if (header == 2) for (int y = 0; y < BLOCK_SIZE; y++) {
+                        int bitSetY = blockY * BLOCK_SIZE + y;
+                        int startX = blockX * BLOCK_SIZE;
+                        bitSet.set(bitSetY * COLORING_SIZE + startX, bitSetY * COLORING_SIZE + startX + BLOCK_SIZE);
+                    }
+                    else if (header == 0) {
+                        int size = dis.readShort();
+                        byte[] rleBytes = dis.readNBytes(size);
+                        ByteArrayInputStream rleBais = new ByteArrayInputStream(rleBytes);
+                        DataInputStream rleDis = new DataInputStream(rleBais);
+                        int index = 0;
+                        boolean current = false;
+                        while (rleDis.available() > 0) {
+                            int runLength = readVarInt(rleDis);
+                            if (current) {
+                                for (int i = index; i < index + runLength; i++) {
+                                    int bitSetY = blockY * BLOCK_SIZE + i / BLOCK_SIZE;
+                                    int bitSetX = blockX * BLOCK_SIZE + i % BLOCK_SIZE;
+                                    bitSet.set(bitSetY * COLORING_SIZE + bitSetX);
+                                }
+                            }
+                            index += runLength;
+                            current = !current;
+                        }
+                    } else if (header != 1) throw new RuntimeException("Invalid header byte: " + header);
+                } catch (IOException ignored) {}
             }
-        } catch (IOException ignored) {}
+        }
         return bitSet;
     }
 
