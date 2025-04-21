@@ -1,7 +1,6 @@
 package pitheguy.countycolor.coloring.history;
 
 import com.badlogic.gdx.graphics.*;
-import org.w3c.dom.Text;
 import pitheguy.countycolor.coloring.ColoringGrid;
 import pitheguy.countycolor.coloring.MapColor;
 
@@ -10,23 +9,27 @@ import java.util.BitSet;
 import static pitheguy.countycolor.render.util.RenderConst.COLORING_SIZE;
 
 public class HistorySnapshot {
+    private static final int DOWNSCALE_FACTOR = 4;
     private final BitSet bitSet;
     private Pixmap pixmap;
     private Texture texture;
 
     public HistorySnapshot(ColoringGrid grid) {
-        bitSet = grid.asBitSet();
-        pixmap = grid.asPixmap();
+        this(grid.asBitSet(), grid.getColor());
     }
 
     public HistorySnapshot(BitSet bitSet, MapColor color) {
-        this.bitSet = bitSet;
-        pixmap = new Pixmap(COLORING_SIZE, COLORING_SIZE, Pixmap.Format.RGBA8888);
+        this.bitSet = new BitSet(bitSet.length() / (DOWNSCALE_FACTOR * DOWNSCALE_FACTOR));
+        for (int y = 0; y < COLORING_SIZE / DOWNSCALE_FACTOR; y++)
+            for (int x = 0; x < COLORING_SIZE / DOWNSCALE_FACTOR; x++)
+                if (bitSet.get(y * DOWNSCALE_FACTOR * COLORING_SIZE + x * DOWNSCALE_FACTOR))
+                    this.bitSet.set(y * COLORING_SIZE + x);
+        pixmap = new Pixmap(COLORING_SIZE / DOWNSCALE_FACTOR, COLORING_SIZE / DOWNSCALE_FACTOR, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
         pixmap.setColor(color.getColor());
-        for (int i = 0; i < bitSet.length(); i++)
-            if (bitSet.get(i)) pixmap.drawPixel(i % COLORING_SIZE, COLORING_SIZE - i / COLORING_SIZE);
+        for (int i = 0; i < this.bitSet.length(); i++)
+            if (this.bitSet.get(i)) pixmap.drawPixel(i % (COLORING_SIZE / DOWNSCALE_FACTOR), (COLORING_SIZE / DOWNSCALE_FACTOR) - i / (COLORING_SIZE / DOWNSCALE_FACTOR));
     }
 
     public BitSet getBitSet() {
