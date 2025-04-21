@@ -9,7 +9,7 @@ import java.util.*;
 import static pitheguy.countycolor.render.util.RenderConst.COLORING_SIZE;
 
 public class ColoringHistory {
-    public static final int MAX_SNAPSHOTS = 20;
+    public static final int MAX_SNAPSHOTS = 30;
     private final List<HistorySnapshot> snapshots = new ArrayList<>();
 
     public void addSnapshot(HistorySnapshot snapshot) {
@@ -39,9 +39,7 @@ public class ColoringHistory {
                 index = diffBits.nextSetBit(end + 1);
             }
             Util.writeVarInt(nums.size() / 2, stream);
-            try {
-                for (int num : nums) data.writeInt(num);
-            } catch (IOException ignored) {}
+            for (int num : nums) Util.writeVarInt(num, data);
             previousBits = currentBits;
         }
         return Util.compress(stream.toByteArray());
@@ -52,18 +50,16 @@ public class ColoringHistory {
         ByteArrayInputStream stream = new ByteArrayInputStream(Util.decompress(data));
         DataInputStream dataStream = new DataInputStream(stream);
         BitSet currentBits = new BitSet((COLORING_SIZE / HistorySnapshot.DOWNSCALE_FACTOR) * (COLORING_SIZE / HistorySnapshot.DOWNSCALE_FACTOR));
-        try {
-            while (stream.available() > 0) {
-                int numRecords = Util.readVarInt(stream);
-                for (int i = 0; i < numRecords; i++) {
-                    int index = dataStream.readInt();
-                    int length = dataStream.readInt();
-                    currentBits.set(index, index + length);
-                }
-                history.snapshots.add(new HistorySnapshot((BitSet) currentBits.clone(), color));
-                if (history.snapshots.size() > MAX_SNAPSHOTS) throw new IllegalStateException("Too many snapshots!");
+        while (stream.available() > 0) {
+            int numRecords = Util.readVarInt(stream);
+            for (int i = 0; i < numRecords; i++) {
+                int index = Util.readVarInt(dataStream);
+                int length = Util.readVarInt(dataStream);
+                currentBits.set(index, index + length);
             }
-        } catch (IOException ignored) {}
+            history.snapshots.add(new HistorySnapshot((BitSet) currentBits.clone(), color));
+            if (history.snapshots.size() > MAX_SNAPSHOTS) throw new IllegalStateException("Too many snapshots!");
+        }
         return history;
     }
 
