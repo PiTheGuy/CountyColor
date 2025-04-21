@@ -387,7 +387,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     public void show() {
         if (loadingFuture != null) Util.getFutureValue(loadingFuture);
         InputManager.setInputProcessor(new InputMultiplexer(stage, this));
-        lastSnapshotIndex = (int) (getCompletion() * 20);
+        lastSnapshotIndex = (int) (getCompletion() * ColoringHistory.MAX_SNAPSHOTS);
         snapshotThread = new SnapshotThread();
         snapshotThread.start();
     }
@@ -424,7 +424,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         @Override
         public void run() {
             while (running) {
-                if (lastSnapshotIndex < (int) (getCompletion() * 20)) {
+                if (lastSnapshotIndex < (int) (getCompletion() * ColoringHistory.MAX_SNAPSHOTS)) {
                     snapshot();
                     lastSnapshotIndex++;
                 }

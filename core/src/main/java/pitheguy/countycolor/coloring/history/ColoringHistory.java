@@ -68,8 +68,7 @@ public class ColoringHistory {
     }
 
     public void rasterizeNextSnapshot() {
-        for (int i = 0; i < snapshots.size(); i++) {
-            HistorySnapshot snapshot = snapshots.get(i);
+        for (HistorySnapshot snapshot : snapshots) {
             if (!snapshot.isRasterized()) {
                 snapshot.rasterize();
                 return;

@@ -10,26 +10,33 @@ import static pitheguy.countycolor.render.util.RenderConst.COLORING_SIZE;
 
 public class HistorySnapshot {
     public static final int DOWNSCALE_FACTOR = 4;
+    public static final int DOWNSCALED_SIZE = COLORING_SIZE / DOWNSCALE_FACTOR;
     private final BitSet bitSet;
     private Pixmap pixmap;
     private Texture texture;
 
     public HistorySnapshot(ColoringGrid grid) {
-        this(grid.asBitSet(), grid.getColor());
+        this.bitSet = new BitSet(DOWNSCALED_SIZE * DOWNSCALED_SIZE);
+        for (int y = 0; y < DOWNSCALED_SIZE; y++)
+            for (int x = 0; x < DOWNSCALED_SIZE; x++)
+                if (grid.get(x * DOWNSCALE_FACTOR, y * DOWNSCALE_FACTOR))
+                    bitSet.set(y * DOWNSCALED_SIZE + x);
+        pixmap = new Pixmap(DOWNSCALED_SIZE, DOWNSCALED_SIZE, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        pixmap.setColor(grid.getColor().getColor());
+        for (int i = 0; i < this.bitSet.length(); i++)
+            if (this.bitSet.get(i)) pixmap.drawPixel(i % DOWNSCALED_SIZE, DOWNSCALED_SIZE - i / DOWNSCALED_SIZE);
     }
 
     public HistorySnapshot(BitSet bitSet, MapColor color) {
-        this.bitSet = new BitSet(bitSet.length() / (DOWNSCALE_FACTOR * DOWNSCALE_FACTOR));
-        for (int y = 0; y < COLORING_SIZE / DOWNSCALE_FACTOR; y++)
-            for (int x = 0; x < COLORING_SIZE / DOWNSCALE_FACTOR; x++)
-                if (bitSet.get(y * DOWNSCALE_FACTOR * COLORING_SIZE + x * DOWNSCALE_FACTOR))
-                    this.bitSet.set(y * COLORING_SIZE + x);
-        pixmap = new Pixmap(COLORING_SIZE / DOWNSCALE_FACTOR, COLORING_SIZE / DOWNSCALE_FACTOR, Pixmap.Format.RGBA8888);
+        this.bitSet = bitSet;
+        pixmap = new Pixmap(DOWNSCALED_SIZE, DOWNSCALED_SIZE, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
         pixmap.setColor(color.getColor());
         for (int i = 0; i < this.bitSet.length(); i++)
-            if (this.bitSet.get(i)) pixmap.drawPixel(i % (COLORING_SIZE / DOWNSCALE_FACTOR), (COLORING_SIZE / DOWNSCALE_FACTOR) - i / (COLORING_SIZE / DOWNSCALE_FACTOR));
+            if (this.bitSet.get(i)) pixmap.drawPixel(i % DOWNSCALED_SIZE, DOWNSCALED_SIZE - i / DOWNSCALED_SIZE);
     }
 
     public BitSet getBitSet() {
