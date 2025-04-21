@@ -52,7 +52,6 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private ColoringGrid coloringGrid;
     private Future<?> loadingFuture;
     private ColoringHistory history;
-    private int totalPixels = -1;
     private float timeSinceSave = 0f;
     private int lastSnapshotIndex = 0;
     private boolean inTransition = false;
@@ -76,12 +75,9 @@ public class CountyColorScreen implements Screen, InputProcessor {
             ExecutorService executor = Executors.newSingleThreadExecutor();
             loadingFuture = executor.submit(this::load);
             executor.shutdown();
-            lastSnapshotIndex = (int) (getCompletion() * 20);
         } else {
             coloringGrid = new ColoringGrid();
             history = new ColoringHistory();
-            snapshotThread = new SnapshotThread();
-            snapshotThread.start();
         }
         countyRenderer = new CountyRenderer(county);
         initStage();
@@ -121,8 +117,6 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     @Override
     public void render(float delta) {
-        if (totalPixels == -1)
-            totalPixels = countyRenderer.getTotalGridSquares();
         camera.update();
         transitionHelper.update(delta);
         Gdx.gl.glClearColor(1, 1, 1, 1);
@@ -143,7 +137,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
             saveAsync();
             timeSinceSave = 0;
         }
-        history.getSnapshots().forEach(HistorySnapshot::rasterize);
+        history.rasterizeNextSnapshot();
         if (getCompletion() == 1) onCountyCompleted();
     }
 
@@ -294,7 +288,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
     }
 
     public float getCompletion() {
-        return markedAsComplete ? 1 : (float) Math.min((double) coloringGrid.coloredPoints() / totalPixels, 1);
+        return markedAsComplete ? 1 : (float) Math.min((double) coloringGrid.coloredPoints() / countyRenderer.getTotalGridSquares(), 1);
     }
 
     public void markAsComplete() {
@@ -364,12 +358,10 @@ public class CountyColorScreen implements Screen, InputProcessor {
         if (countyJson == null) throw new IllegalStateException("No saved data for county");
         coloringGrid = ColoringGrid.fromJson(countyJson);
         history = ColoringHistory.decode(Base64.getDecoder().decode(countyJson.getString("history")), coloringGrid.getColor());
-        snapshotThread = new SnapshotThread();
-        this.snapshotThread.start();
     }
 
     private void snapshot() {
-        HistorySnapshot snapshot = new HistorySnapshot(coloringGrid.copy());
+        HistorySnapshot snapshot = new HistorySnapshot(coloringGrid);
         history.addSnapshot(snapshot);
     }
 
@@ -395,6 +387,9 @@ public class CountyColorScreen implements Screen, InputProcessor {
     public void show() {
         if (loadingFuture != null) Util.getFutureValue(loadingFuture);
         InputManager.setInputProcessor(new InputMultiplexer(stage, this));
+        lastSnapshotIndex = (int) (getCompletion() * 20);
+        snapshotThread = new SnapshotThread();
+        snapshotThread.start();
     }
 
     public String getState() {
@@ -429,7 +424,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         @Override
         public void run() {
             while (running) {
-                if (lastSnapshotIndex < getCompletion() * 20) {
+                if (lastSnapshotIndex < (int) (getCompletion() * 20)) {
                     snapshot();
                     lastSnapshotIndex++;
                 }

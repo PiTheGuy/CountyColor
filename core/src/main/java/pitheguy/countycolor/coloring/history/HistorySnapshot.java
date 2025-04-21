@@ -9,7 +9,7 @@ import java.util.BitSet;
 import static pitheguy.countycolor.render.util.RenderConst.COLORING_SIZE;
 
 public class HistorySnapshot {
-    private static final int DOWNSCALE_FACTOR = 4;
+    public static final int DOWNSCALE_FACTOR = 4;
     private final BitSet bitSet;
     private Pixmap pixmap;
     private Texture texture;
@@ -44,6 +44,10 @@ public class HistorySnapshot {
     public void dispose() {
         if (pixmap != null) pixmap.dispose();
         if (texture != null) texture.dispose();
+    }
+
+    public boolean isRasterized() {
+        return texture != null;
     }
 
     public void rasterize() {

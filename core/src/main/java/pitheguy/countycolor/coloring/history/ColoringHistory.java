@@ -9,6 +9,7 @@ import java.util.*;
 import static pitheguy.countycolor.render.util.RenderConst.COLORING_SIZE;
 
 public class ColoringHistory {
+    public static final int MAX_SNAPSHOTS = 20;
     private final List<HistorySnapshot> snapshots = new ArrayList<>();
 
     public void addSnapshot(HistorySnapshot snapshot) {
@@ -20,9 +21,10 @@ public class ColoringHistory {
     }
 
     public byte[] encode() {
+        if (snapshots.isEmpty()) return new byte[0];
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         DataOutputStream data = new DataOutputStream(stream);
-        BitSet previousBits = new BitSet(COLORING_SIZE * COLORING_SIZE);
+        BitSet previousBits = new BitSet((COLORING_SIZE / HistorySnapshot.DOWNSCALE_FACTOR) * (COLORING_SIZE / HistorySnapshot.DOWNSCALE_FACTOR));
         for (HistorySnapshot snapshot : new ArrayList<>(snapshots)) {
             BitSet currentBits = snapshot.getBitSet();
             BitSet diffBits = (BitSet) currentBits.clone();
@@ -49,7 +51,7 @@ public class ColoringHistory {
         ColoringHistory history = new ColoringHistory();
         ByteArrayInputStream stream = new ByteArrayInputStream(Util.decompress(data));
         DataInputStream dataStream = new DataInputStream(stream);
-        BitSet currentBits = new BitSet(COLORING_SIZE * COLORING_SIZE);
+        BitSet currentBits = new BitSet((COLORING_SIZE / HistorySnapshot.DOWNSCALE_FACTOR) * (COLORING_SIZE / HistorySnapshot.DOWNSCALE_FACTOR));
         try {
             while (stream.available() > 0) {
                 int numRecords = Util.readVarInt(stream);
@@ -59,9 +61,20 @@ public class ColoringHistory {
                     currentBits.set(index, index + length);
                 }
                 history.snapshots.add(new HistorySnapshot((BitSet) currentBits.clone(), color));
+                if (history.snapshots.size() > MAX_SNAPSHOTS) throw new IllegalStateException("Too many snapshots!");
             }
         } catch (IOException ignored) {}
         return history;
+    }
+
+    public void rasterizeNextSnapshot() {
+        for (int i = 0; i < snapshots.size(); i++) {
+            HistorySnapshot snapshot = snapshots.get(i);
+            if (!snapshot.isRasterized()) {
+                snapshot.rasterize();
+                return;
+            }
+        }
     }
 
     public void dispose() {
