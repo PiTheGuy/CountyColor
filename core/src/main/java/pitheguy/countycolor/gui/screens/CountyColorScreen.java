@@ -15,13 +15,15 @@ import com.badlogic.gdx.utils.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import pitheguy.countycolor.coloring.ColoringGrid;
 import pitheguy.countycolor.coloring.MapColor;
+import pitheguy.countycolor.coloring.history.ColoringHistory;
+import pitheguy.countycolor.coloring.history.HistorySnapshot;
 import pitheguy.countycolor.metadata.CountyData;
 import pitheguy.countycolor.render.renderer.ColoringRenderer;
 import pitheguy.countycolor.render.renderer.CountyRenderer;
 import pitheguy.countycolor.render.util.*;
 import pitheguy.countycolor.util.*;
 
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -48,13 +50,16 @@ public class CountyColorScreen implements Screen, InputProcessor {
     private float maxZoom;
     private float brushSize = 5;
     private ColoringGrid coloringGrid;
-    private Future<ColoringGrid> coloringGridFuture;
+    private Future<?> loadingFuture;
+    private ColoringHistory history;
     private int totalPixels = -1;
     private float timeSinceSave = 0f;
+    private int lastSnapshotIndex = 0;
     private boolean inTransition = false;
     private boolean dirty = false;
     private Thread saveThread;
     private boolean markedAsComplete = false;
+    private SnapshotThread snapshotThread;
 
     public CountyColorScreen(Game game, CountyData.County county, boolean load) {
         this.game = game;
@@ -69,9 +74,15 @@ public class CountyColorScreen implements Screen, InputProcessor {
         transitionHelper = new CameraTransitionHelper(game, camera);
         if (load) {
             ExecutorService executor = Executors.newSingleThreadExecutor();
-            coloringGridFuture = executor.submit(this::load);
+            loadingFuture = executor.submit(this::load);
             executor.shutdown();
-        } else coloringGrid = new ColoringGrid();
+            lastSnapshotIndex = (int) (getCompletion() * 20);
+        } else {
+            coloringGrid = new ColoringGrid();
+            history = new ColoringHistory();
+            snapshotThread = new SnapshotThread();
+            snapshotThread.start();
+        }
         countyRenderer = new CountyRenderer(county);
         initStage();
     }
@@ -132,6 +143,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
             saveAsync();
             timeSinceSave = 0;
         }
+        history.getSnapshots().forEach(HistorySnapshot::rasterize);
         if (getCompletion() == 1) onCountyCompleted();
     }
 
@@ -173,7 +185,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         saveAsync();
         addCountyToCompletionFile();
         inTransition = true;
-        transitionHelper.slowTransition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, coloringGrid.getColor()), false);
+        transitionHelper.slowTransition(new Vector2(0, 0), 2f, new CountyCompleteScreen(game, county, coloringGrid.getColor(), history), false);
     }
 
     @Override
@@ -300,6 +312,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         font.dispose();
         progressBarRenderer.dispose();
         skin.dispose();
+        snapshotThread.stopRunning();
     }
 
     private void saveAsync() {
@@ -326,6 +339,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
         countyJson.addChild("color", new JsonValue(coloringGrid.getColor().getSerializedName()));
         if (getCompletion() < 1) {
             countyJson.addChild("coloredPoints", new JsonValue(coloringGrid.asEncodedString()));
+            countyJson.addChild("history", new JsonValue(Base64.getEncoder().encodeToString(history.encode())));
         }
         countyJson.addChild("completion", new JsonValue(getCompletion()));
         dataHandle.writeString(root.toJson(JsonWriter.OutputType.json), false);
@@ -341,16 +355,22 @@ public class CountyColorScreen implements Screen, InputProcessor {
         handle.writeString(root.toJson(JsonWriter.OutputType.json), false);
     }
 
-    private ColoringGrid load() {
+    private void load() {
         FileHandle dataHandle = Gdx.files.local("data/" + county.getState() + ".json");
         if (!dataHandle.exists()) throw new IllegalStateException("No saved data for county");
         JsonReader reader = new JsonReader();
         JsonValue root = reader.parse(dataHandle);
         JsonValue countyJson = root.get(county.getName());
         if (countyJson == null) throw new IllegalStateException("No saved data for county");
-        if (countyJson.getBoolean("complete", false))
-            throw new IllegalStateException("Tried to load an already completed county");
-        return ColoringGrid.fromJson(countyJson);
+        coloringGrid = ColoringGrid.fromJson(countyJson);
+        history = ColoringHistory.decode(Base64.getDecoder().decode(countyJson.getString("history")), coloringGrid.getColor());
+        snapshotThread = new SnapshotThread();
+        this.snapshotThread.start();
+    }
+
+    private void snapshot() {
+        HistorySnapshot snapshot = new HistorySnapshot(coloringGrid.copy());
+        history.addSnapshot(snapshot);
     }
 
 
@@ -373,7 +393,7 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     @Override
     public void show() {
-        if (coloringGridFuture != null) coloringGrid = Util.getFutureValue(coloringGridFuture);
+        if (loadingFuture != null) Util.getFutureValue(loadingFuture);
         InputManager.setInputProcessor(new InputMultiplexer(stage, this));
     }
 
@@ -399,4 +419,31 @@ public class CountyColorScreen implements Screen, InputProcessor {
     @Override public void hide() {}
     @Override public boolean keyUp(int keycode) { return false; }
     @Override public boolean keyTyped(char character) { return false; }
+
+    private class SnapshotThread extends Thread {
+        private boolean running = true;
+        private SnapshotThread() {
+            super("Snapshot Thread");
+        }
+
+        @Override
+        public void run() {
+            while (running) {
+                if (lastSnapshotIndex < getCompletion() * 20) {
+                    snapshot();
+                    lastSnapshotIndex++;
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Snapshot thread interrupted", e);
+                }
+            }
+        }
+
+        public void stopRunning() {
+            running = false;
+        }
+
+    }
 }

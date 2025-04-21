@@ -44,6 +44,20 @@ public class CountyRenderer extends CountyLevelRenderer {
         shapeRenderer.end();
     }
 
+    public void renderCounty(OrthographicCamera camera, float scale) {
+        ensureLoadingFinished();
+        updateCamera(camera);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(Color.BLACK);
+        if (!polygons.isVisibleToCamera(camera)) return;
+        for (List<Vector2> points : polygons.getPolygons()) {
+            List<Vector2> pointsCopy = new ArrayList<>(points);
+            pointsCopy.replaceAll(vector2 -> vector2.cpy().scl(scale));
+            RenderUtil.drawThickPolylineCulled(camera, shapeRenderer, pointsCopy, OUTLINE_THICKNESS, true);
+        }
+        shapeRenderer.end();
+    }
+
     public void renderCountyFilled(OrthographicCamera camera, float scale, MapColor color) {
         ensureLoadingFinished();
         updateCamera(camera);

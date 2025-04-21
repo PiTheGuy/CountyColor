@@ -45,4 +45,28 @@ public class Util {
             throw new RuntimeException(e);
         }
     }
+
+    public static void writeVarInt(int value, OutputStream out) {
+        try {
+            while ((value & 0xFFFFFF80) != 0L) {
+                out.write((value & 0x7F) | 0x80);
+                value >>>= 7;
+            }
+            out.write(value & 0x7F);
+        } catch (IOException ignored) {}
+    }
+
+    public static int readVarInt(InputStream in) {
+        int value = 0;
+        int position = 0;
+        int b;
+        try {
+            while (((b = in.read()) & 0x80) != 0) {
+                value |= (b & 0x7F) << position;
+                position += 7;
+            }
+            value |= b << position;
+        } catch (IOException ignored) {}
+        return value;
+    }
 }

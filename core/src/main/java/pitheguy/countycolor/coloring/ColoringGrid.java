@@ -86,18 +86,18 @@ public class ColoringGrid implements Disposable {
                         DataOutputStream rleDataStream = new DataOutputStream(rleStream);
                         boolean current = get(blockX * BLOCK_SIZE, blockY * BLOCK_SIZE);
                         int runLength = 0;
-                        if (current) writeVarInt(0, rleDataStream);
+                        if (current) Util.writeVarInt(0, rleDataStream);
 
                         for (int y = 0; y < BLOCK_SIZE; y++) {
                             for (int x = 0; x < BLOCK_SIZE; x++) {
                                 if (get(blockX * BLOCK_SIZE + x, blockY * BLOCK_SIZE + y) != current) {
-                                    writeVarInt(runLength, rleDataStream);
+                                    Util.writeVarInt(runLength, rleDataStream);
                                     current = get(blockX * BLOCK_SIZE + x, blockY * BLOCK_SIZE + y);
                                     runLength = 1;
                                 } else runLength++;
                             }
                         }
-                        writeVarInt(runLength, rleDataStream);
+                        Util.writeVarInt(runLength, rleDataStream);
                         byte[] rleBytes = rleStream.toByteArray();
                         if (rleBytes[rleBytes.length - 1] == 0) System.out.println("Last byte was zero");
                         dos.writeShort(rleBytes.length);
@@ -130,7 +130,7 @@ public class ColoringGrid implements Disposable {
                         int index = 0;
                         boolean current = false;
                         while (rleDis.available() > 0) {
-                            int runLength = readVarInt(rleDis);
+                            int runLength = Util.readVarInt(rleDis);
                             if (current) {
                                 for (int i = index; i < index + runLength; i++) {
                                     int bitSetY = blockY * BLOCK_SIZE + i / BLOCK_SIZE;
@@ -146,30 +146,6 @@ public class ColoringGrid implements Disposable {
             }
         }
         return bitSet;
-    }
-
-    private static void writeVarInt(int value, OutputStream out) {
-        try {
-            while ((value & 0xFFFFFF80) != 0L) {
-                out.write((value & 0x7F) | 0x80);
-                value >>>= 7;
-            }
-            out.write(value & 0x7F);
-        } catch (IOException ignored) {}
-    }
-
-    private static int readVarInt(InputStream in) {
-        int value = 0;
-        int position = 0;
-        int b;
-        try {
-            while (((b = in.read()) & 0x80) != 0) {
-                value |= (b & 0x7F) << position;
-                position += 7;
-            }
-            value |= b << position;
-        } catch (IOException ignored) {}
-        return value;
     }
 
     public void setColor(MapColor color) {
@@ -250,5 +226,12 @@ public class ColoringGrid implements Disposable {
     public void dispose() {
         pixmap.dispose();
         pixmapUpdateExecutor.shutdownNow();
+    }
+
+    public ColoringGrid copy() {
+        BitSet copyBitSet = (BitSet) bitSet.clone();
+        Pixmap copyPixmap = new Pixmap(pixmap.getWidth(), pixmap.getHeight(), pixmap.getFormat());
+        copyPixmap.drawPixmap(pixmap, 0, 0);
+        return new ColoringGrid(copyPixmap, copyBitSet, color);
     }
 }
