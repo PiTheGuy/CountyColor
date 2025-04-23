@@ -122,8 +122,7 @@ public class CountyRenderer extends CountyLevelRenderer {
         float ratio = totalPerimeter / totalArea;
         float multiplier = 0.00173616f * ratio + 0.999478f;
 
-        int coloringSize = RENDER_SIZE * COLORING_RESOLUTION;
-        int halfGridSize = coloringSize / 2;
+        int halfGridSize = COLORING_SIZE / 2;
         int total = 0;
         List<List<Vector2>> scaledPolygons = new ArrayList<>();
         polygons.getPolygons().parallelStream().forEach(poly -> {
@@ -132,7 +131,7 @@ public class CountyRenderer extends CountyLevelRenderer {
             List<List<Vector2>> shrunk = shrinkPolygon(scaled);
             scaledPolygons.addAll(shrunk);
         });
-        for (int gridY = 0; gridY < coloringSize; gridY++) {
+        for (int gridY = 0; gridY < COLORING_SIZE; gridY++) {
             float worldY = ((float) gridY + 0.5f - halfGridSize) / COLORING_RESOLUTION;
             List<Interval> intervals = new ArrayList<>();
             for (List<Vector2> poly : scaledPolygons) {

@@ -362,7 +362,8 @@ public class CountyColorScreen implements Screen, InputProcessor {
 
     private void snapshot() {
         HistorySnapshot snapshot = new HistorySnapshot(coloringGrid);
-        history.addSnapshot(snapshot);
+        if (history.getSnapshots().isEmpty() || !history.getSnapshots().get(history.getSnapshots().size() - 1).equals(snapshot))
+            history.addSnapshot(snapshot);
     }
 
 

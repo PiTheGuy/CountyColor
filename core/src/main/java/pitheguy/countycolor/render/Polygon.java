@@ -22,10 +22,16 @@ public class Polygon {
     }
 
     public void recalculateBounds() {
-        minX = (float) points.stream().mapToDouble(v -> v.x).min().getAsDouble();
-        minY = (float) points.stream().mapToDouble(v -> v.y).min().getAsDouble();
-        maxX = (float) points.stream().mapToDouble(v -> v.x).max().getAsDouble();
-        maxY = (float) points.stream().mapToDouble(v -> v.y).max().getAsDouble();
+        minX = Float.POSITIVE_INFINITY;
+        minY = Float.POSITIVE_INFINITY;
+        maxX = Float.NEGATIVE_INFINITY;
+        maxY = Float.NEGATIVE_INFINITY;
+        for (Vector2 point : points) {
+            if (point.x < minX) minX = point.x;
+            if (point.x > maxX) maxX = point.x;
+            if (point.y < minY) minY = point.y;
+            if (point.y > maxY) maxY = point.y;
+        }
     }
 
     public boolean isAdjacentTo(Polygon other) {
